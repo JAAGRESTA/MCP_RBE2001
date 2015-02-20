@@ -19,21 +19,25 @@ Servo rackMotor;
 Servo grabberServo;
 
 enum State{
-	findReactor;
-	grabSpent;
-	findDisposal;
-	placeSpent;
-	findSupply;
-	grabSupply;
-	returnToReactor;
-	placeSupply;
-}
+	findReactor,
+	grabSpent,
+	findDisposal,
+	placeSpent,
+	findSupply,
+	grabSupply,
+	returnToReactor,
+	placeSupply
+};
+
+State state;
 void setup(){
 	leftDrive.attach(leftDrivePin, 1000, 2000);
 	rightDrive.attach(rightDrivePin, 1000, 2000);
 	fourBarMotor.attach(fourBarPin, 1000, 2000);
 	rackMotor.attach(rackMotorPin, 1000, 2000);
 	grabberServo.attach(grabberServoPin);
+
+	state = findReactor;
 }
 
 void loop(){
@@ -43,7 +47,7 @@ void loop(){
 }
 
 void main(){
-	switch () {
+	switch (state) {
 	    case :
 	      // do something
 	      break;
