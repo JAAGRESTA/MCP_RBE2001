@@ -21,9 +21,12 @@
 #define rightBWD 180
 
 char reactor; //reactor type
-int lineCount; //counts amount of lines
-int lineFlag; //flage when line detected
-
+int lineCount; 
+int lineFlag; //flag when line detected
+int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = dark
+int measError; //difference in line tracker sensor values
+int error, leftSpeed, rightSpeed; 
+int heartBeatCounter = 0;
 
 
 Servo leftDrive;
@@ -51,6 +54,7 @@ void setup(){
 	fourBarMotor.attach(fourBarPin,1000,2000);
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
+
 	pinMode(lineSensePin1, INPUT);
 	pinMode(lineSensePin2, INPUT);
 	pinMode(lineSensePin3, INPUT);
@@ -65,9 +69,6 @@ void setup(){
 
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(100msISR);
-	Timer2.initialize(2000000);
-	Timer2.attachInterrupt(hearbeatISR);
-
 }
 
 void loop(){
@@ -75,10 +76,10 @@ void loop(){
  	stateMachine();
 
 }
-//state machine that runs between states of 
+//master state machine
 void stateMachine(){
 	switch (state) {
-	    case findReactor: //finds a reactor
+	    case findReactor: 
 	      if(reactor == 'A'){ //for reactor A
 	      	forward();	
 	      	if(lineHit(1)){ //changes depends on where we start
@@ -135,17 +136,72 @@ boolean lineHit(int x){
 	}
 }
 
-void forward(){
+void forward()
+{
 	leftDrive.write(leftFWD);
 	rightDrive.write(rightFWD);
 }
-void HundredMsISR() {
+
+void HundredMsISR() 
+{
 	fetchBluetooth();
+	heartBeatCounter++;
+	if(heartBeatCounter == 20)
+	{
+		doHeartBeat();
+		heartBeatCounter = 0;
+	}
 }
-void heartbeatISR() {
 
-
-}
-void fetchBluetooth(){
+void fetchBluetooth()
+{
 	
+}
+
+//method to do line tracking until the robot drives over a line
+void followLine() 
+{
+	while(crossHit() != true)
+	{
+		getError();
+		leftDrive.write(leftSpeed);
+		rightDrive.write(leftSpeed);
+	}
+}
+
+//finds difference in line sensor values, sets that value to a useable motor speeds
+void getError()
+{
+ 	measError = analogRead(lineSensePin1) - analogRead(lineSensePin3);
+	error = map(measError, -1023, 1023, 0, 180);
+	leftSpeed = error;
+	rightSpeed = 180 - error;
+}
+
+//method to see if the far line sensor and at least one other line sensor on on a line or not indicating a cross
+//returns true if a cross is hit, false otherwise 
+boolean crossHit() 
+{
+	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2)|| overLine(lineSensePin3)))
+  	{
+  		return true;
+  	} 
+  	else 
+  	{
+  		return false;
+  	}
+}
+
+//method to check if a line sensor is on the line or not
+//returns true if it's on dark, false otherwise
+boolean overLine(int lineSensorPin) 
+{
+	if (analogRead(lineSensorPin) >= lightThreshold))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
