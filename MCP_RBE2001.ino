@@ -1,4 +1,7 @@
 #include <Servo.h>
+#include <TimerOne.h>
+#include <BluetoothClient.h>
+#include <BluetoothMaster.h>
 //all pins are temporary and need changing
 #define leftDrivePin 24
 #define rightDrivePin 23
@@ -21,9 +24,7 @@ char reactor; //reactor type
 int lineCount; //counts amount of lines
 int lineFlag; //flage when line detected
 
-#include <TimerOne.h>
-#include <BluetoothClient.h>
-#include <BluetoothMaster.h>
+
 
 Servo leftDrive;
 Servo rightDrive;
@@ -57,13 +58,16 @@ void setup(){
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	state = findReactor;
+
 	reactor = 'A'; //reactor type
 	lineCount = 0; //counts the amount of lines
 	lineFlag = 0; //flag for when line detected 
+
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(100msISR);
 	Timer2.initialize(2000000);
 	Timer2.attachInterrupt(hearbeatISR);
+
 }
 
 void loop(){
@@ -115,6 +119,7 @@ void stateMachine(){
 	}
 
 }
+
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
 	if((lineFlag == 0) && (analogRead(lineSensePin4 == HIGH))){
@@ -133,10 +138,14 @@ boolean lineHit(int x){
 void forward(){
 	leftDrive.write(leftFWD);
 	rightDrive.write(rightFWD);
-=======
-void 100msISR() {
+}
+void HundredMsISR() {
 	fetchBluetooth();
 }
 void heartbeatISR() {
 
+
+}
+void fetchBluetooth(){
+	
 }
