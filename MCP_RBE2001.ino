@@ -23,6 +23,9 @@
 #define rightBWD 180
 #define baseSpeedLeft 130
 #define baseSpeedRight 50
+#define grabberClosed 180
+#define grabberOpen 0
+#define rackMoveTime 50;
 
 char reactor; //reactor type
 int lineCount; 
@@ -261,3 +264,30 @@ void setArmAngle(int desiredAngle)
 	} 
 }
 
+//closes claw
+void grab()
+{
+	grabberServo.write(grabberClosed);
+}
+
+//opens claw
+void releaseGrab()
+{
+	grabberServo.write(grabberOpen);
+}
+
+//moves rack and pinion system to forward position, stops
+void rackForward()
+{
+	rackMotor.write(150);
+	delay(rackMoveTime);
+	rackMotor.write(90);
+}
+
+//moves rack and pinion system to backward position, stops
+void rackReverse()
+{
+	rackMotor.write(30);
+	delay(rackMoveTime);
+	rackMotor.write(90);
+}
