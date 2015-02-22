@@ -1,5 +1,7 @@
 #include <Servo.h>
-
+#include <TimerOne.h>
+#include <BluetoothClient.h>
+#include <BluetoothMaster.h>
 #define leftDrivePin;
 #define rightDrivePin;
 #define fourBarPin;
@@ -38,6 +40,10 @@ void setup(){
 	grabberServo.attach(grabberServoPin);
 
 	state = findReactor;
+	Timer1.initialize(100000);
+	Timer1.attachInterrupt(100msISR);
+	Timer2.initialize(2000000);
+	Timer2.attachInterrupt(hearbeatISR);
 }
 
 void loop(){
@@ -48,14 +54,39 @@ void loop(){
 
 void main(){
 	switch (state) {
-	    case :
+	    case findReactor:
 	      // do something
 	      break;
-	    case :
+	    case grabSpent:
 	      // do something
 	      break;
 	    default:
 	      // do something
+	      break;
+	    case findDisposal:
+	    	//stuff
+	    	break;
+	    case placeSpent:
+	    	//stuff
+	    	break;
+	    case findSupply:
+	    	//stuff
+	    	break;
+	    case grabSupply:
+	    	//stuff
+	    	break;
+	    case returnToReactor:
+	    	//stuff
+	    	break;
+	    case placeSupply:
+	    	//stuff
+	    	break;
 	}
+
+}
+void 100msISR() {
+	fetchBluetooth();
+}
+void heartbeatISR() {
 
 }
