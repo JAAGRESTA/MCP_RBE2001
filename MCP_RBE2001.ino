@@ -15,6 +15,8 @@
 #define lineSensePin4 A4
 #define potPin A5
 
+#define stopSpeed 90
+#define potRange 180
 #define leftFWD 180
 #define rightFWD 0
 #define leftBWD 0
@@ -30,6 +32,10 @@ int measError; //difference in line tracker sensor values
 int error;
 float leftSpeed, rightSpeed, speedGain = 0.55; 
 int heartBeatCounter = 0;
+int potAngle;
+int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0;
+float adjustedSpeed, pGain, iGain, dGain;
+
 
 Servo leftDrive;
 Servo rightDrive;
@@ -138,10 +144,18 @@ boolean lineHit(int x){
 	}
 }
 
+//drive forward
 void forward()
 {
 	leftDrive.write(leftFWD);
 	rightDrive.write(rightFWD);
+}
+
+//stop both motors
+void stop()
+{
+	leftDrive.write(stopSpeed);
+	rightDrive.write(stopSpeed);
 }
 
 void HundredMsISR() 
@@ -207,3 +221,42 @@ boolean overLine(int lineSensorPin)
 		return false;
 	}
 }
+
+//method to check if limit switch is pressed
+//returns true if the switch is pressed, false otherwise
+boolean reactorHit()
+{
+	if(digitalRead(limitPin) == LOW)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+//checks the potentiometer position and converts it to an angle
+//returns the potentiometer angle value in degrees
+int getPotAngle()
+{
+	potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
+	return potAngle;
+}
+
+//sets four-bar to a given desired angle with PID control
+void setArmAngle(int desiredAngle)
+{
+	while(true)
+	{
+		prevAngleError = measAngleError;
+		angleError = desiredAngle - getPotAngle();
+		deltaAngleError = prevAngleError - measAngleError;
+		sumAngleError = angleError + prevAngleError;
+		
+		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
+		fourBarMotor.write(90 + adjustedSpeed);
+
+	} 
+}
+
