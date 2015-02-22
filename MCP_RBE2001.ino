@@ -81,16 +81,16 @@ void stateMachine(){
 	switch (state) {
 	    case findReactor: 
 	      if(reactor == 'A'){ //for reactor A
-	      	forward();	
+	      	followLine();	
 	      	if(lineHit(1)){ //changes depends on where we start
-	      		if(analogRead(limitPin) == LOW){
+	      		if(digitalRead(limitPin) == LOW){
 	      		state = grabSpent;
 	      		}
 	      	}
 	      }
 	      if(reactor == 'B'){ //for reactor B
 	      	if(lineHit(4)){ //might need to change depending on where it turns around
-	      		if(analogRead(limitPin) == LOW){
+	      		if(digitalRead(limitPin) == LOW){
 	      		state = grabSpent;
 	      		}
 	      	}
@@ -123,10 +123,10 @@ void stateMachine(){
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
-	if((lineFlag == 0) && (analogRead(lineSensePin4 == HIGH))){
+	if((lineFlag == 0) && (crossHit())){
 		lineCount++;
 		lineFlag = 1; 
-	}else if((lineFlag == 1) && (analogRead(lineSensePin4 == LOW))){
+	}else if((lineFlag == 1) && (!crossHit()){
 		lineFlag = 0;			
 	}				
 	if(lineCount == x){
