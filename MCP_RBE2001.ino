@@ -224,6 +224,7 @@ boolean overLine(int lineSensorPin)
 
 //method to check if limit switch is pressed
 //returns true if the switch is pressed, false otherwise
+//assumes active low
 boolean reactorHit()
 {
 	if(digitalRead(limitPin) == LOW)
@@ -251,7 +252,7 @@ void setArmAngle(int desiredAngle)
 	{
 		prevAngleError = measAngleError;
 		angleError = desiredAngle - getPotAngle();
-		deltaAngleError = prevAngleError - measAngleError;
+		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
 		
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
