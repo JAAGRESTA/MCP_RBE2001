@@ -19,15 +19,17 @@
 #define rightFWD 0
 #define leftBWD 0
 #define rightBWD 180
+#define baseSpeedLeft 130
+#define baseSpeedRight 50
 
 char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = dark
 int measError; //difference in line tracker sensor values
-int error, leftSpeed, rightSpeed; 
+int error;
+float leftSpeed, rightSpeed, speedGain = 0.55; 
 int heartBeatCounter = 0;
-
 
 Servo leftDrive;
 Servo rightDrive;
@@ -164,18 +166,18 @@ void followLine()
 	while(crossHit() != true)
 	{
 		getError();
+		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
+		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
 	}
 }
 
-//finds difference in line sensor values, sets that value to a useable motor speeds
+//finds difference in line sensor values, sets that value to a useable motor speed
 void getError()
 {
  	measError = analogRead(lineSensePin1) - analogRead(lineSensePin3);
-	error = map(measError, -1023, 1023, 0, 180);
-	leftSpeed = error;
-	rightSpeed = 180 - error;
+	error = map(measError, -1023, 1023, -90, 90);
 }
 
 //method to see if the far line sensor and at least one other line sensor on on a line or not indicating a cross
