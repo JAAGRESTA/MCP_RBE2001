@@ -21,6 +21,9 @@ char reactor; //reactor type
 int lineCount; //counts amount of lines
 int lineFlag; //flage when line detected
 
+#include <TimerOne.h>
+#include <BluetoothClient.h>
+#include <BluetoothMaster.h>
 
 Servo leftDrive;
 Servo rightDrive;
@@ -57,6 +60,10 @@ void setup(){
 	reactor = 'A'; //reactor type
 	lineCount = 0; //counts the amount of lines
 	lineFlag = 0; //flag for when line detected 
+	Timer1.initialize(100000);
+	Timer1.attachInterrupt(100msISR);
+	Timer2.initialize(2000000);
+	Timer2.attachInterrupt(hearbeatISR);
 }
 
 void loop(){
@@ -88,16 +95,22 @@ void stateMachine(){
 	      // do something
 	      break;
 	    case findDisposal:
+	    	//stuff
 	    	break;
 	    case placeSpent:
+	    	//stuff
 	    	break;
 	    case findSupply:
+	    	//stuff
 	    	break;
 	    case grabSupply:
+	    	//stuff
 	    	break;
 	    case returnToReactor:
+	    	//stuff
 	    	break;
 	    case placeSupply:
+	    	//stuff
 	    	break;
 	}
 
@@ -120,4 +133,10 @@ boolean lineHit(int x){
 void forward(){
 	leftDrive.write(leftFWD);
 	rightDrive.write(rightFWD);
+=======
+void 100msISR() {
+	fetchBluetooth();
+}
+void heartbeatISR() {
+
 }
