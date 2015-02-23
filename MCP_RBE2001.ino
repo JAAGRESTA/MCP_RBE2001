@@ -25,7 +25,7 @@
 #define baseSpeedRight 50
 #define grabberClosed 180
 #define grabberOpen 0
-#define rackMoveTime 50;
+#define rackMoveTime 50
 
 char reactor; //reactor type
 int lineCount; 
@@ -36,9 +36,9 @@ int error;
 float leftSpeed, rightSpeed, speedGain = 0.55; 
 int heartBeatCounter = 0;
 int potAngle;
-int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0;
+int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed, pGain, iGain, dGain;
-
+float slowTimeGain = 0.75;
 
 Servo leftDrive;
 Servo rightDrive;
@@ -79,7 +79,7 @@ void setup(){
 	lineFlag = 0; //flag for when line detected 
 
 	Timer1.initialize(100000);
-	Timer1.attachInterrupt(100msISR);
+	Timer1.attachInterrupt(HundredMsISR);
 }
 
 void loop(){
@@ -91,20 +91,17 @@ void loop(){
 void stateMachine(){
 	switch (state) {
 	    case findReactor: 
-	      if(reactor == 'A'){ //for reactor A
-	      	followLine();	
-	      	if(lineHit(1)){ //changes depends on where we start
-	      		if(digitalRead(limitPin) == LOW){
-	      		state = grabSpent;
-	      		}
-	      	}
+	      if(reactor == 'A') //for reactor A
+	      { 
+	      	followLine(1); //depends where we start	
+	      	approachReactor(); //works because while loop wont end till limit hit
+	      	state = grabSpent;	
 	      }
-	      if(reactor == 'B'){ //for reactor B
-	      	if(lineHit(4)){ //might need to change depending on where it turns around
-	      		if(digitalRead(limitPin) == LOW){
-	      		state = grabSpent;
-	      		}
-	      	}
+	      if(reactor == 'B') //for reactor B
+	      { 
+	      	followLine(4); //depends where we start	
+	      	approachReactor(); //works because while loop wont end till limit hit
+	      	state = grabSpent;	
 	      }
 	      break;
 	    case grabSpent:
@@ -134,15 +131,19 @@ void stateMachine(){
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
-	if((lineFlag == 0) && (crossHit())){
+	if((lineFlag == 0) && (crossHit()))
+	{
 		lineCount++;
 		lineFlag = 1; 
-	}else if((lineFlag == 1) && (!crossHit()){
+	}else if((lineFlag == 1) && (!crossHit()))
+	{
 		lineFlag = 0;			
 	}				
-	if(lineCount == x){
+	if(lineCount == x)
+	{
 		return true;
-	}else{
+	}else
+	{
 		return false;
 	}
 }
@@ -178,9 +179,9 @@ void fetchBluetooth()
 }
 
 //method to do line tracking until the robot drives over a line
-void followLine() 
-{
-	while(crossHit() != true)
+void followLine(int lines) 
+{			
+	while((!lineHit(lines)))
 	{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
@@ -188,6 +189,7 @@ void followLine()
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
 	}
+
 }
 
 //finds difference in line sensor values, sets that value to a useable motor speed
@@ -201,7 +203,7 @@ void getError()
 //returns true if a cross is hit, false otherwise 
 boolean crossHit() 
 {
-	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2)|| overLine(lineSensePin3)))
+	if((overLine(lineSensePin4) && overLine(lineSensePin1)) || (overLine(lineSensePin2) || overLine(lineSensePin3))) //does this need to be &&?
   	{
   		return true;
   	} 
@@ -215,7 +217,7 @@ boolean crossHit()
 //returns true if it's on dark, false otherwise
 boolean overLine(int lineSensorPin) 
 {
-	if (analogRead(lineSensorPin) >= lightThreshold))
+	if (analogRead(lineSensorPin) >= lightThreshold)
 	{
 		return true;
 	}
@@ -253,7 +255,7 @@ void setArmAngle(int desiredAngle)
 {
 	while(true)
 	{
-		prevAngleError = measAngleError;
+		prevAngleError = measAngleError; //not a thing yet
 		angleError = desiredAngle - getPotAngle();
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
@@ -290,4 +292,20 @@ void rackReverse()
 	rackMotor.write(30);
 	delay(rackMoveTime);
 	rackMotor.write(90);
+}
+
+//allows us to approach the reactor until limit switch hit
+//written the same as followLine method
+//optional slowing approach commented out
+void approachReactor()
+{
+	while(!reactorHit())
+	{
+	getError();
+	leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
+	rightSpeed = baseSpeedRight + ((float) error*speedGain); // -(slowTime * slowTimeGain);
+	leftDrive.write(leftSpeed);
+	rightDrive.write(leftSpeed);
+	//slowTime++;
+	}
 }
