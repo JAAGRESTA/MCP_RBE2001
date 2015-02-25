@@ -26,6 +26,8 @@
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
+#define upPosition 90 
+#define downPosition 0
 
 char reactor; //reactor type
 int lineCount; 
@@ -39,6 +41,7 @@ int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
+int XYcoords[] = {0,1};
 
 Servo leftDrive;
 Servo rightDrive;
@@ -47,14 +50,18 @@ Servo rackMotor;
 Servo grabberServo;
 
 enum State{
-	findReactor,
+	findStart,
+	findReactorB,
 	grabSpent,
 	findDisposal,
 	placeSpent,
 	findSupply,
 	grabSupply,
-	returnToReactor,
-	placeSupply
+	returnToReactorB,
+	placeSupply, 
+	findReactorA,
+	returnToReactorA,
+	idle
 };
 
 State state;
@@ -90,7 +97,13 @@ void loop(){
 //master state machine
 void stateMachine(){
 	switch (state) {
-	    case findReactor: 
+		case findStart: 
+			followLine();
+			turnRight90(); //make this
+			followLine();
+			approachReactor();
+			state = grabSpent;
+	    case findReactorA: 
 	      if(reactor == 'A') //for reactor A
 	      { 
 	      	followLine(1); //depends where we start	
@@ -105,7 +118,12 @@ void stateMachine(){
 	      }
 	      break;
 	    case grabSpent:
-	      // do something
+	      rackReverse();
+	      releaseGrab();
+	      setArmAngle(downPosition);
+	      rackForward();
+	      grab();
+	      state = findDisposal;
 	      break;
 	    case findDisposal:
 	    	//stuff
@@ -131,19 +149,13 @@ void stateMachine(){
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
-	if((lineFlag == 0) && (crossHit()))
-	{
-		lineCount++;
-		lineFlag = 1; 
-	}else if((lineFlag == 1) && (!crossHit()))
-	{
-		lineFlag = 0;			
-	}				
 	if(lineCount == x)
 	{
+		lineCount = 0;
 		return true;
 	}else
 	{
+		lineCount = 0;
 		return false;
 	}
 }
@@ -179,9 +191,9 @@ void fetchBluetooth()
 }
 
 //method to do line tracking until the robot drives over a line
-void followLine(int lines) 
+void followLine() 
 {			
-	while((!lineHit(lines)))
+	while(crossHit != true)
 	{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
@@ -189,7 +201,6 @@ void followLine(int lines)
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
 	}
-
 }
 
 //finds difference in line sensor values, sets that value to a useable motor speed
@@ -203,8 +214,9 @@ void getError()
 //returns true if a cross is hit, false otherwise 
 boolean crossHit() 
 {
-	if((overLine(lineSensePin4) && overLine(lineSensePin1)) || (overLine(lineSensePin2) || overLine(lineSensePin3))) //does this need to be &&?
+	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3))) 
   	{
+  		lineCount++;
   		return true;
   	} 
   	else 
@@ -253,17 +265,12 @@ int getPotAngle()
 //sets four-bar to a given desired angle with PID control
 void setArmAngle(int desiredAngle)
 {
-	while(true)
-	{
-		prevAngleError = measAngleError; //not a thing yet
+		prevAngleError = AngleError; //not a thing yet
 		angleError = desiredAngle - getPotAngle();
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
-		
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		fourBarMotor.write(90 + adjustedSpeed);
-
-	} 
 }
 
 //closes claw
