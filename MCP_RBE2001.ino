@@ -118,7 +118,7 @@ void stateMachine(){
 	      }
 	      break;
 	    case grabSpent:
-	      rackReverse();
+	   	  rackReverse();
 	      releaseGrab();
 	      setArmAngle(downPosition);
 	      rackForward();
@@ -126,22 +126,37 @@ void stateMachine(){
 	      state = findDisposal;
 	      break;
 	    case findDisposal:
-	    	//stuff
-	    	break;
+	   	  	//stuff
+	   		break;
 	    case placeSpent:
-	    	//stuff
+	    	rackReverse();
+	    	setArmAngle(upPosition);
+	    	rackForward();
+	    	releaseGrab();
+	    	rackReverse();
+	    	setArmAngle(downPosition);
+	    	state = findSupply;
 	    	break;
 	    case findSupply:
 	    	//stuff
 	    	break;
 	    case grabSupply:
-	    	//stuff
+	    	rackReverse();
+	    	setArmAngle(upPosition);
+	    	releaseGrab();
+	    	rackForward();
+	    	grab();
+	    	rackReverse();
 	    	break;
 	    case returnToReactor:
 	    	//stuff
 	    	break;
 	    case placeSupply:
-	    	//stuff
+	    	rackReverse();
+	    	setArmAngle(downPosition);
+	    	rackForward();
+	    	releaseGrab();
+	    	rackReverse();
 	    	break;
 	}
 
@@ -265,7 +280,7 @@ int getPotAngle()
 //sets four-bar to a given desired angle with PID control
 void setArmAngle(int desiredAngle)
 {
-		prevAngleError = AngleError; //not a thing yet
+		prevAngleError = angleError; //not a thing yet
 		angleError = desiredAngle - getPotAngle();
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
