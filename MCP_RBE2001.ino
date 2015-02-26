@@ -42,6 +42,7 @@ int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, s
 float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
 int XYcoords[] = {0,1};
+int currentXYcoords[] = {0,1};
 
 Servo leftDrive;
 Servo rightDrive;
@@ -110,12 +111,12 @@ void stateMachine(){
 	      	approachReactor(); //works because while loop wont end till limit hit
 	      	state = grabSpent;	
 	      }
-	      if(reactor == 'B') //for reactor B
-	      { 
-	      	followLine(4); //depends where we start	
-	      	approachReactor(); //works because while loop wont end till limit hit
-	      	state = grabSpent;	
-	      }
+	      // if(reactor == 'B') //for reactor B
+	      // { 
+	      // 	followLine(4); //depends where we start	
+	      // 	approachReactor(); //works because while loop wont end till limit hit
+	      // 	state = grabSpent;	
+	      // }
 	      break;
 	    case grabSpent:
 	   	  rackReverse();
@@ -206,9 +207,9 @@ void fetchBluetooth()
 }
 
 //method to do line tracking until the robot drives over a line
-void followLine() 
+void followLine(int lines) 
 {			
-	while(crossHit != true)
+	while(crossHit(lines) != true)
 	{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
@@ -227,15 +228,21 @@ void getError()
 
 //method to see if the far line sensor and at least one other line sensor on on a line or not indicating a cross
 //returns true if a cross is hit, false otherwise 
-boolean crossHit() 
+boolean crossHit(int lines) 
 {
-	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3))) 
+	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3)) && (!(lineCount == lines))) 
   	{
   		lineCount++;
+  		return false;
+  	} 
+  	else if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3)) && (lineCount == lines)) 
+  	{
+  		
   		return true;
   	} 
   	else 
   	{
+  		
   		return false;
   	}
 }
@@ -330,4 +337,49 @@ void approachReactor()
 	rightDrive.write(leftSpeed);
 	//slowTime++;
 	}
+}
+//navigates to a desired reactor from any point on the course
+//make sure when starting robot to be in initialized XYcoords position
+void navigateToReactorCoord()
+{
+	int x;
+	int y;
+	y = XYcoords[1] - currentXYcoords[1];
+	if(y != 0)
+	{
+		turn180(); //not written
+		followLine(1);
+	}
+	x = XYcoords[0] - currentXYcoords[0];
+	if((x != 0) && (y != 0))
+	{
+		if( (x > 0) && (y < 0))
+		{
+			turnRight90(); //not written
+			followLine(abs(x-1));
+			approachReactor();
+
+		}else if((x > 0) && (y > 0))
+		{
+			turnLeft90(); //not written
+			followLine(abs(x-1));
+			approachReactor();
+		}else if((x < 0) && (y < 0))
+		{
+			turnLeft90(); //not written
+			followLine(abs(x-1));
+			approachReactor();
+		}else if((x < 0) && (y > 0))
+		{
+			turnRight90(); //not written
+			followLine(abs(x-1));
+			approachReactor();
+		}
+
+	}else if((x != 0) && (y = 0)) //assumes we are facing the right direction, which should be the case in this case
+	{
+		followLine(abs(x-1));
+		approachReactor();
+	}
+
 }
