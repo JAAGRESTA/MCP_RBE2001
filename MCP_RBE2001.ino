@@ -404,3 +404,41 @@ void navigateToReactorCoord()
 	}
 
 }
+//navigates to closest disposal based off of which reactor it is starting from
+void navigateToDisposal()
+{
+	int i;
+	turn180();
+	if(reactor == 'A')
+	{
+		for(i=1; i<5; i++)
+		{
+			if(disposalEmpty(i))
+			{
+				goXlines(i);
+				turnLeft90();
+				approachReactor();
+				break;
+
+			}
+		}
+	}
+	else if(reactor == 'B')
+	{
+		for(i=4; i>0; i--)
+		{
+			if(disposalEmpty(i))
+			{
+				goXlines(i);
+				turnRight90();
+				approachReactor();
+				break;
+			}
+		}
+	}
+}
+// uses Bluetooth signal to check if disposal x is available
+void disposalEmpty(int x)
+{
+
+}
