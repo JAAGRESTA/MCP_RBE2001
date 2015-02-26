@@ -43,12 +43,19 @@ float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
 int XYcoords[] = {0,1};
 int currentXYcoords[] = {0,1};
+int armStatus = DOWN; 
+
 
 Servo leftDrive;
 Servo rightDrive;
 Servo fourBarMotor;
 Servo rackMotor;
 Servo grabberServo;
+
+enum armState{
+	UP,
+	DOWN
+};
 
 enum State{
 	findStart,
@@ -107,16 +114,17 @@ void stateMachine(){
 	    case findReactorA: 
 	      if(reactor == 'A') //for reactor A
 	      { 
-	      	followLine(1); //depends where we start	
+	      	goXlines(1); //depends where we start	
 	      	approachReactor(); //works because while loop wont end till limit hit
 	      	state = grabSpent;	
 	      }
-	      // if(reactor == 'B') //for reactor B
-	      // { 
-	      // 	followLine(4); //depends where we start	
-	      // 	approachReactor(); //works because while loop wont end till limit hit
-	      // 	state = grabSpent;	
-	      // }
+	      if(reactor == 'B') //for reactor B
+	      { 
+	      	goXlines(4); //depends where we start	
+	      	approachReactor(); //works because while loop wont end till limit hit
+	      	state = grabSpent;	
+	      }
+
 	      break;
 	    case grabSpent:
 	   	  rackReverse();
@@ -124,6 +132,7 @@ void stateMachine(){
 	      setArmAngle(downPosition);
 	      rackForward();
 	      grab();
+	      rackReverse();
 	      state = findDisposal;
 	      break;
 	    case findDisposal:
@@ -207,16 +216,33 @@ void fetchBluetooth()
 }
 
 //method to do line tracking until the robot drives over a line
-void followLine(int lines) 
+void followLine() 
 {			
-	while(crossHit(lines) != true)
+	while(crossHit() != true)
 	{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
 		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
+		if(armStatus == DOWN)
+		{
+			setArmAngle(downPosition);
+		} 
+		else if(armStatus == UP)
+		{
+			setArmAngle(upPosition);
+		}
 	}
+}
+
+void goXlines(int lineNum)
+{
+	while(lineCount != lineNum)
+	{
+		followLine();
+	}
+	lineCount = 0;
 }
 
 //finds difference in line sensor values, sets that value to a useable motor speed
@@ -230,14 +256,9 @@ void getError()
 //returns true if a cross is hit, false otherwise 
 boolean crossHit(int lines) 
 {
-	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3)) && (!(lineCount == lines))) 
+	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3))) 
   	{
   		lineCount++;
-  		return false;
-  	} 
-  	else if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3)) && (lineCount == lines)) 
-  	{
-  		
   		return true;
   	} 
   	else 
@@ -287,7 +308,7 @@ int getPotAngle()
 //sets four-bar to a given desired angle with PID control
 void setArmAngle(int desiredAngle)
 {
-		prevAngleError = angleError; //not a thing yet
+		prevAngleError = angleError; 
 		angleError = desiredAngle - getPotAngle();
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
@@ -348,7 +369,7 @@ void navigateToReactorCoord()
 	if(y != 0)
 	{
 		turn180(); //not written
-		followLine(1);
+		goXlines(1);
 	}
 	x = XYcoords[0] - currentXYcoords[0];
 	if((x != 0) && (y != 0))
@@ -356,29 +377,29 @@ void navigateToReactorCoord()
 		if( (x > 0) && (y < 0))
 		{
 			turnRight90(); //not written
-			followLine(abs(x-1));
+			goXlines(abs(x-1));
 			approachReactor();
 
 		}else if((x > 0) && (y > 0))
 		{
 			turnLeft90(); //not written
-			followLine(abs(x-1));
+			goXlines(abs(x-1));
 			approachReactor();
 		}else if((x < 0) && (y < 0))
 		{
 			turnLeft90(); //not written
-			followLine(abs(x-1));
+			goXlines(abs(x-1));
 			approachReactor();
 		}else if((x < 0) && (y > 0))
 		{
 			turnRight90(); //not written
-			followLine(abs(x-1));
+			goXlines(abs(x-1));
 			approachReactor();
 		}
 
 	}else if((x != 0) && (y = 0)) //assumes we are facing the right direction, which should be the case in this case
 	{
-		followLine(abs(x-1));
+		goXlines(abs(x-1));
 		approachReactor();
 	}
 
