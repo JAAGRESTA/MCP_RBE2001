@@ -42,12 +42,18 @@ int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, s
 float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
 int XYcoords[] = {0,1};
+int armStatus = DOWN; 
 
 Servo leftDrive;
 Servo rightDrive;
 Servo fourBarMotor;
 Servo rackMotor;
 Servo grabberServo;
+
+enum armState{
+	UP,
+	DOWN
+};
 
 enum State{
 	findStart,
@@ -106,13 +112,13 @@ void stateMachine(){
 	    case findReactorA: 
 	      if(reactor == 'A') //for reactor A
 	      { 
-	      	followLine(1); //depends where we start	
+	      	goXlines(1); //depends where we start	
 	      	approachReactor(); //works because while loop wont end till limit hit
 	      	state = grabSpent;	
 	      }
 	      if(reactor == 'B') //for reactor B
 	      { 
-	      	followLine(4); //depends where we start	
+	      	goXlines(4); //depends where we start	
 	      	approachReactor(); //works because while loop wont end till limit hit
 	      	state = grabSpent;	
 	      }
@@ -123,6 +129,7 @@ void stateMachine(){
 	      setArmAngle(downPosition);
 	      rackForward();
 	      grab();
+	      rackReverse();
 	      state = findDisposal;
 	      break;
 	    case findDisposal:
@@ -215,7 +222,24 @@ void followLine()
 		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
+		if(armStatus == DOWN)
+		{
+			setArmAngle(downPosition);
+		} 
+		else if(armStatus == UP)
+		{
+			setArmAngle(upPosition);
+		}
 	}
+}
+
+void goXlines(int lineNum)
+{
+	while(lineCount != lineNum)
+	{
+		followLine();
+	}
+	lineCount = 0;
 }
 
 //finds difference in line sensor values, sets that value to a useable motor speed
@@ -280,7 +304,7 @@ int getPotAngle()
 //sets four-bar to a given desired angle with PID control
 void setArmAngle(int desiredAngle)
 {
-		prevAngleError = angleError; //not a thing yet
+		prevAngleError = angleError; 
 		angleError = desiredAngle - getPotAngle();
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
