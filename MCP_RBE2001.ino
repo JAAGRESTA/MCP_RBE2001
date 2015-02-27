@@ -29,6 +29,21 @@
 #define upPosition 90 
 #define downPosition 0
 
+#define delimiter_pos 5
+#define length_pos 4
+#define type_pos 3
+#define source_pos 2
+#define dest_pos 1
+#define checksum_pos 0
+
+#define storageTube_length 7
+#define supplyTube_length 7
+#define radAlert_length 7
+#define stop_length 6
+#define start_length 6
+#define status_length 9
+#define heartBeat_length 6
+
 char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
@@ -44,7 +59,7 @@ float slowTimeGain = 0.75;
 int XYcoords[] = {0,1};
 int currentXYcoords[] = {0,1};
 int armStatus = DOWN; 
-
+long long myData;
 
 Servo leftDrive;
 Servo rightDrive;
@@ -72,6 +87,16 @@ enum State{
 	idle
 };
 
+enum blueState{
+	storageTube,
+	supplyTube,
+	radAlert,
+	stopMovement,
+	startMovement,
+	robotStatus,
+	robotHeartbeat
+};
+blueState _blueState;
 State state;
 
 void setup(){
@@ -80,7 +105,7 @@ void setup(){
 	fourBarMotor.attach(fourBarPin,1000,2000);
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
-
+	Serial1.begin(115200)
 	pinMode(lineSensePin1, INPUT);
 	pinMode(lineSensePin2, INPUT);
 	pinMode(lineSensePin3, INPUT);
@@ -95,6 +120,8 @@ void setup(){
 
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(HundredMsISR);
+	BluetoothClient blueClient = new BluetoothClient();
+	BluetoothMaster blueMaster = new BluetoothMaster();
 }
 
 void loop(){
@@ -202,6 +229,7 @@ void stop()
 void HundredMsISR() 
 {
 	fetchBluetooth();
+	extractBluetooth();
 	heartBeatCounter++;
 	if(heartBeatCounter == 20)
 	{
@@ -209,12 +237,121 @@ void HundredMsISR()
 		heartBeatCounter = 0;
 	}
 }
-
-void fetchBluetooth()
-{
-	
+void fetchBluetooth() {
+	fetchBluetooth(&myData);
 }
+void extractBluetooth()
+{
+	noInterrupts();
+	long long myDataTemp = myData;
+	interrupts();
+	if(checkValidity(myDataTemp)) {
+		extractData();
+	}
 
+}
+bool checkValidity(long long data) {
+	bool isValid = checkByte(data, delimiter_pos, 0x5F) && checkByte(data, source_pos, 0x00) && checkByte(data, dest_pos, 0x0A) && checkLengthType(data) && checkCheckSum(data);
+	return isValid;
+}
+bool checkLengthType(long long data) {
+	bool result;
+	int counter = 0;
+	int lengthBits;
+	for(i = data; i != 0; i >> 1) {
+		counter++;
+	}
+	checkType(data);
+	switch(_blueState) {
+		case storageTube:
+			result = (counter == storageTube_length*8);
+			break;
+		case supplyTube:
+			result = (counter == supplyTube_length*8);
+			break;
+		case radAlert:
+			result = (counter == radAlert_length*8);
+			break;
+		case stopMovement:
+			result = (counter == stop_length*8);
+			break;
+		case startMovement:
+			result = (counter == start_length*8);
+			break;
+		case robotStatus:
+			result = (counter == status_length*8);
+			break;
+		case robotHeartbeat:
+			result = (counter == heartBeat_length*8);
+			break;
+		case default:
+			break;
+	}
+	return result;
+}
+void checkType(long long data) {
+	char msgType = byteShift(data, 2);
+	if(checkMsgType(msgType, 0x01)) {
+		_blueState = storageTube;
+	}
+	else if(checkMsgType(msgType, 0x02)) {
+		_blueState = supplyTube;
+	}
+	else if(checkMsgType(msgType, 0x03)) {
+		_blueState = radAlert;
+	}
+	else if(checkMsgType(msgType, 0x04)) {
+		_blueState = stopMovement;
+	}
+	else if(checkMsgType(msgType, 0x05)) {
+		_blueState = startMovement;
+	}
+	else if(checkMsgType(msgType, 0x06)) {
+		_blueState = robotStatus;
+	}
+	else if(checkMsgType(msgType, 0x06)) {
+		_blueState = robotHeartbeat;
+	}
+}
+bool checkMsgType(char msgType, char checkVal) {
+	return checkByte((long long)msgType, 0, checkVal);
+}
+bool checkCheckSum(long long data) {
+	//HOW DO CHECKSUM HALP
+}
+bool checkByte(long long data, int pos, char checkVal) {
+	char dataByte = byteShift(data, pos);
+	if((dataByte & checkVal) == 0xFF) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+long long extractData(long long data) { //still need to do this
+	switch(_blueState) {
+		case storageTube:
+			break;
+		case supplyTube:
+			break;
+		case radAlert:
+			break;
+		case stopMovement:
+			break;
+		case startMovement:
+			break;
+		case robotStatus:
+			break;
+		case robotHeartbeat:
+			break;
+		case default:
+	}
+}
+char byteShift(long long inBytes, int amt) {
+	amtFinal = amt*8;
+	char outBit = (inBytes >> amtFinal) & 0x0F;
+	return outBit;
+}
 //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
