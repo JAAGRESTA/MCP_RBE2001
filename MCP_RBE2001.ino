@@ -44,13 +44,6 @@
 #define status_length 9
 #define heartBeat_length 6
 
-#define storageTube_pos 1
-#define supplyTube_pos 1
-#define radAlert_pos 1
-#define stop_pos 0
-#define start_pos 0
-#define status_pos
-
 char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
