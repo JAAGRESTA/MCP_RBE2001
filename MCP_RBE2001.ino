@@ -105,7 +105,7 @@ void setup(){
 	fourBarMotor.attach(fourBarPin,1000,2000);
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
-	Serial1.begin(115200)
+	Serial1.begin(115200);
 	pinMode(lineSensePin1, INPUT);
 	pinMode(lineSensePin2, INPUT);
 	pinMode(lineSensePin3, INPUT);
