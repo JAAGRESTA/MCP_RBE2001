@@ -44,6 +44,13 @@
 #define status_length 9
 #define heartBeat_length 6
 
+#define storageTube_pos 1
+#define supplyTube_pos 1
+#define radAlert_pos 1
+#define stop_pos 0
+#define start_pos 0
+#define status_pos
+
 char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
@@ -59,7 +66,10 @@ float slowTimeGain = 0.75;
 int XYcoords[] = {0,1};
 int currentXYcoords[] = {0,1};
 int armStatus = DOWN; 
+
 long long myData;
+bool storageMask[4];
+bool supplyMask[4];
 
 Servo leftDrive;
 Servo rightDrive;
@@ -328,11 +338,17 @@ bool checkByte(long long data, int pos, char checkVal) {
 		return false;
 	}
 }
-long long extractData(long long data) { //still need to do this
+long extractData(long long data) { //still need to do this
 	switch(_blueState) {
 		case storageTube:
+			char storageMask;
+			memcpy(byteShift(data, 5), storageMask, 1);
+			parseStorageMask(storageMask);
 			break;
 		case supplyTube:
+			char supplyMask;
+			memcpy(byteShift(data, 5), supplyMask, 1);
+			parseSupplyMask(supplyMask);
 			break;
 		case radAlert:
 			break;
@@ -345,6 +361,20 @@ long long extractData(long long data) { //still need to do this
 		case robotHeartbeat:
 			break;
 		case default:
+	}
+}
+void parseStorageMask(char storageMaskTemp) {
+	int counter = 0;
+	for(i=1;i<8;i<<1) {
+		storageMask[counter] = (storageMaskTemp & i);
+		counter++;
+	}
+}
+void parseSupplyMask(char supplyMaskTemp) {
+	int counter = 0;
+	for(i=1;i<8;i<<1) {
+		supplyMask[counter] = (storageMaskTemp & i);
+		counter++;
 	}
 }
 char byteShift(long long inBytes, int amt) {
@@ -566,7 +596,7 @@ void navigateToDisposal()
 		{
 			if(disposalEmpty(i))
 			{
-				goXlines((5-i));
+				goXlines(i);
 				turnRight90();
 				approachReactor();
 				break;
