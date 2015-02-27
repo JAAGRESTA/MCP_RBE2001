@@ -566,7 +566,7 @@ void navigateToDisposal()
 		{
 			if(disposalEmpty(i))
 			{
-				goXlines(i);
+				goXlines((5-i));
 				turnRight90();
 				approachReactor();
 				break;
