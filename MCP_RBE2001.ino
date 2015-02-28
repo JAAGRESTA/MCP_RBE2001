@@ -71,7 +71,7 @@ Servo fourBarMotor;
 Servo rackMotor;
 Servo grabberServo;
 
-enum armState{
+enum armState{ //needs use
 	UP,
 	DOWN
 };
@@ -241,7 +241,7 @@ void HundredMsISR()
 		heartBeatCounter = 0;
 	}
 }
-void fetchBluetooth() {
+void fetchBluetooth() { 
 	fetchBluetooth(&myData);
 }
 void extractBluetooth()
@@ -579,6 +579,7 @@ void navigateToDisposal()
 				goXlines(i);
 				turnLeft90();
 				approachReactor();
+				currentXYcoords[]= {i,2};
 				break;
 
 			}
@@ -593,13 +594,116 @@ void navigateToDisposal()
 				goXlines((5-i));
 				turnRight90();
 				approachReactor();
+				currentXYcoords[]= {i,2};
 				break;
 			}
 		}
 	}
 }
-// uses Bluetooth signal to check if disposal x is available
-void disposalEmpty(int x)
+// uses Bluetooth signal to check if disposal x is available returns true if disposal is empty
+// param: int x where x is the station number
+boolean disposalEmpty(int x)
+{
+
+}
+// navigates to Supply based off availablity of supply and closest coordinates
+void navigateToSupply()
+{
+	int i;
+	int x;
+	x = currentXYcoords[0];
+	turn180();
+
+	if(reactor == 'A')
+	{
+		for(i=1; i<5; i++)
+			{
+				if(supplyFull(i))
+				{
+					XYcoords[] = {i, 0};
+					break;
+				}
+				 
+			}
+		if(x == XYcoords[0])
+		{
+
+			goXlines(1);
+			approachReactor();
+			currentXYcoords[] = {XYcoords[0], 0};
+
+		}
+		else if(x > XYcoords[0])
+		{
+			int j;
+			j = x - XYcoords[0];
+		    goXlines(1);
+		    turnRight90();
+		    goXlines(j);
+		    turnLeft90();
+		    approachReactor();
+		    currentXYcoords[] = {XYcoords[0], 0};
+		}
+		else
+		{
+			int j;
+			j = XYcoords[0] - x;
+			goXlines(1);
+			turnLeft90();
+			goXlines(j);
+			turnRight90();
+			approachReactor();
+			currentXYcoords[] = {XYcoords[0], 0};
+		}
+
+	}
+	else if(reactor == 'B')
+	{
+		for(i=4; i>0; i--)
+			{
+				if(supplyFull(i))
+				{
+					XYcoords[] = {i, 0};
+					break;
+				}
+				 
+			}
+		if(x == XYcoords[0])
+		{
+
+			goXlines(1);
+			approachReactor();
+			currentXYcoords[] = {XYcoords[0], 0};
+
+		}
+		else if(x > XYcoords[0])
+		{
+			int j;
+			j = x - XYcoords[0];
+		    goXlines(1);
+		    turnRight90();
+		    goXlines(j);
+		    turnLeft90();
+		    approachReactor();
+		    currentXYcoords[] = {XYcoords[0], 0};
+		}
+		else
+		{
+			int j;
+			j = XYcoords[0] - x;
+			goXlines(1);
+			turnLeft90();
+			goXlines(j);
+			turnRight90();
+			approachReactor();
+			currentXYcoords[] = {XYcoords[0], 0};
+		}
+
+	}
+}
+// uses Bluetooth to check availablity of a given supply station and returns true if station is full
+// param: int x where x is the given station number
+boolean supplyFull(int x)
 {
 
 }
