@@ -3,8 +3,8 @@
 #include <BluetoothClient.h>
 #include <BluetoothMaster.h>
 //all pins are temporary and need changing
-#define leftDrivePin 24
-#define rightDrivePin 23
+#define leftDrivePin 26
+#define rightDrivePin 27
 #define fourBarPin 25
 #define rackMotorPin 26
 #define grabberServoPin 27
@@ -14,6 +14,7 @@
 #define lineSensePin3 A3
 #define lineSensePin4 A4
 #define potPin A5
+#define encoderPin1 A6
 
 #define stopSpeed 90
 #define potRange 180
