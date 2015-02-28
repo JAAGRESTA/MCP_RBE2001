@@ -235,7 +235,7 @@ void HundredMsISR()
 	fetchBluetooth();
 	extractBluetooth();
 	heartBeatCounter++;
-	if(heartBeatCounter == 20)
+	if(heartBeatCounter == 5) //every .5 seconds
 	{
 		doHeartBeat();
 		heartBeatCounter = 0;
