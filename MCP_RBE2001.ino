@@ -3,8 +3,8 @@
 #include <BluetoothClient.h>
 #include <BluetoothMaster.h>
 //all pins are temporary and need changing
-#define leftDrivePin 26
-#define rightDrivePin 27
+#define leftDrivePin 27
+#define rightDrivePin 26
 #define fourBarPin 25
 #define rackMotorPin 26 //not a thing at the moment
 #define grabberServoPin 27
@@ -59,9 +59,9 @@ int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
-int XYcoords[] = {0,1};
-int currentXYcoords[] = {0,1};
-int armStatus = DOWN; 
+int XYcoords[2] = {0,1};
+int currentXYcoords[2] = {0,1};
+
 
 long long myData;
 bool storageMask[4];
@@ -104,6 +104,7 @@ enum blueState{
 	robotStatus,
 	robotHeartbeat
 };
+armState armStatus;
 blueState _blueState;
 State state;
 
@@ -114,7 +115,7 @@ void setup(){
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
 
-	Serial1.begin(115200);
+	//Serial1.begin(115200);
 	attachInterrupt(buttonIntPin, resetISR, CHANGE);
 	pinMode(lineSenseRight, INPUT);
 	pinMode(lineSenseLeft, INPUT);
@@ -123,6 +124,7 @@ void setup(){
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	state = start;
+	armStatus = DOWN;
 
 	reactor = 'A'; //reactor type
 	lineCount = 0; //counts the amount of lines
@@ -130,8 +132,8 @@ void setup(){
 
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(HundredMsISR);
-	BluetoothClient blueClient = new BluetoothClient();
-	BluetoothMaster blueMaster = new BluetoothMaster();
+	//BluetoothClient blueClient = new BluetoothClient();
+	//BluetoothMaster blueMaster = new BluetoothMaster();
 }
 
 //method to test stand-alone modules of code for individual testing
@@ -159,81 +161,81 @@ void loop(){
 
 }
 //master state machine
-void stateMachine(){
-while(state != idle)
-{
-	switch (state) {
-		case TESTING:
-			runTest();
-		case findStart: 
-			followLine();
-			turnRight90(); //make this
-			followLine();
-			approachReactor();
-			state = grabSpent;
-	    case findReactorA: 
-	      if(reactor == 'A') //for reactor A
-	      { 
-	      	goXlines(1); //depends where we start	
-	      	approachReactor(); //works because while loop wont end till limit hit
-	      	state = grabSpent;	
-	      }
-	      if(reactor == 'B') //for reactor B
-	      { 
-	      	goXlines(4); //depends where we start	
-	      	approachReactor(); //works because while loop wont end till limit hit
-	      	state = grabSpent;	
-	      }
+ void stateMachine(){
+// while(state != idle)
+// {
+// 	switch (state) {
+// 		case TESTING:
+// 			runTest();
+// 		case findStart: 
+// 			followLine();
+// 			turnRight90(); //make this
+// 			followLine();
+// 			approachReactor();
+// 			state = grabSpent;
+// 	    case findReactorA: 
+// 	      if(reactor == 'A') //for reactor A
+// 	      { 
+// 	      	goXlines(1); //depends where we start	
+// 	      	approachReactor(); //works because while loop wont end till limit hit
+// 	      	state = grabSpent;	
+// 	      }
+// 	      if(reactor == 'B') //for reactor B
+// 	      { 
+// 	      	goXlines(4); //depends where we start	
+// 	      	approachReactor(); //works because while loop wont end till limit hit
+// 	      	state = grabSpent;	
+// 	      }
 
-	      break;
-	    case grabSpent:
-	   	  rackReverse();
-	      releaseGrab();
-	      setArmAngle(downPosition);
-	      rackForward();
-	      grab();
-	      rackReverse();
-	      state = findDisposal;
-	      break;
-	    case findDisposal:
-	   	  	//stuff
-	   		break;
-	    case placeSpent:
-	    	rackReverse();
-	    	setArmAngle(upPosition);
-	    	rackForward();
-	    	releaseGrab();
-	    	rackReverse();
-	    	setArmAngle(downPosition);
-	    	state = findSupply;
-	    	break;
-	    case findSupply:
-	    	//stuff
-	    	break;
-	    case grabSupply:
-	    	rackReverse();
-	    	setArmAngle(upPosition);
-	    	releaseGrab();
-	    	rackForward();
-	    	grab();
-	    	rackReverse();
-	    	break;
-	    case returnToReactor:
-	    	//stuff
-	    	break;
-	    case placeSupply:
-	    	rackReverse();
-	    	setArmAngle(downPosition);
-	    	rackForward();
-	    	releaseGrab();
-	    	rackReverse();
-	    	break;
-	    case idle:
-	    	stop();
-	    	break;
-	}
-}
-}
+// 	      break;
+// 	    case grabSpent:
+// 	   	  rackReverse();
+// 	      releaseGrab();
+// 	      setArmAngle(downPosition);
+// 	      rackForward();
+// 	      grab();
+// 	      rackReverse();
+// 	      state = findDisposal;
+// 	      break;
+// 	    case findDisposal:
+// 	   	  	//stuff
+// 	   		break;
+// 	    case placeSpent:
+// 	    	rackReverse();
+// 	    	setArmAngle(upPosition);
+// 	    	rackForward();
+// 	    	releaseGrab();
+// 	    	rackReverse();
+// 	    	setArmAngle(downPosition);
+// 	    	state = findSupply;
+// 	    	break;
+// 	    case findSupply:
+// 	    	//stuff
+// 	    	break;
+// 	    case grabSupply:
+// 	    	rackReverse();
+// 	    	setArmAngle(upPosition);
+// 	    	releaseGrab();
+// 	    	rackForward();
+// 	    	grab();
+// 	    	rackReverse();
+// 	    	break;
+// 	    case returnToReactor:
+// 	    	//stuff
+// 	    	break;
+// 	    case placeSupply:
+// 	    	rackReverse();
+// 	    	setArmAngle(downPosition);
+// 	    	rackForward();
+// 	    	releaseGrab();
+// 	    	rackReverse();
+// 	    	break;
+// 	    case idle:
+// 	    	stop();
+// 	    	break;
+// 	}
+// }
+ }
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
@@ -262,153 +264,153 @@ void stop()
 	rightDrive.write(stopSpeed);
 }
 
-void HundredMsISR() 
-{
-	fetchBluetooth();
-	extractBluetooth();
-	heartBeatCounter++;
-	if(heartBeatCounter == 5) //every .5 seconds
-	{
-		doHeartBeat();
-		heartBeatCounter = 0;
-	}
-}
-void fetchBluetooth() { 
-	fetchBluetooth(&myData);
-}
-void extractBluetooth()
-{
-	noInterrupts();
-	long long myDataTemp = myData;
-	interrupts();
-	if(checkValidity(myDataTemp)) {
-		extractData();
-	}
+ void HundredMsISR() 
+ {
+// 	fetchBluetooth();
+// 	extractBluetooth();
+// 	heartBeatCounter++;
+// 	if(heartBeatCounter == 5) //every .5 seconds
+// 	{
+// 		doHeartBeat();
+// 		heartBeatCounter = 0;
+// 	}
+ }
+// void fetchBluetooth() { 
+// 	fetchBluetooth(&myData);
+// }
+// void extractBluetooth()
+// {
+// 	noInterrupts();
+// 	long long myDataTemp = myData;
+// 	interrupts();
+// 	if(checkValidity(myDataTemp)) {
+// 		extractData();
+// 	}
 
-}
-bool checkValidity(long long data) {
-	bool isValid = checkByte(data, delimiter_pos, 0x5F) && checkByte(data, source_pos, 0x00) && checkByte(data, dest_pos, 0x0A) && checkLengthType(data) && checkCheckSum(data);
-	return isValid;
-}
-bool checkLengthType(long long data) {
-	bool result;
-	int counter = 0;
-	int lengthBits;
-	for(i = data; i != 0; i >> 1) {
-		counter++;
-	}
-	checkType(data);
-	switch(_blueState) {
-		case storageTube:
-			result = (counter == storageTube_length*8);
-			break;
-		case supplyTube:
-			result = (counter == supplyTube_length*8);
-			break;
-		case radAlert:
-			result = (counter == radAlert_length*8);
-			break;
-		case stopMovement:
-			result = (counter == stop_length*8);
-			break;
-		case startMovement:
-			result = (counter == start_length*8);
-			break;
-		case robotStatus:
-			result = (counter == status_length*8);
-			break;
-		case robotHeartbeat:
-			result = (counter == heartBeat_length*8);
-			break;
-		case default:
-			break;
-	}
-	return result;
-}
-void checkType(long long data) {
-	char msgType = byteShift(data, 2);
-	if(checkMsgType(msgType, 0x01)) {
-		_blueState = storageTube;
-	}
-	else if(checkMsgType(msgType, 0x02)) {
-		_blueState = supplyTube;
-	}
-	else if(checkMsgType(msgType, 0x03)) {
-		_blueState = radAlert;
-	}
-	else if(checkMsgType(msgType, 0x04)) {
-		_blueState = stopMovement;
-	}
-	else if(checkMsgType(msgType, 0x05)) {
-		_blueState = startMovement;
-	}
-	else if(checkMsgType(msgType, 0x06)) {
-		_blueState = robotStatus;
-	}
-	else if(checkMsgType(msgType, 0x06)) {
-		_blueState = robotHeartbeat;
-	}
-}
-bool checkMsgType(char msgType, char checkVal) {
-	return checkByte((long long)msgType, 0, checkVal);
-}
-bool checkCheckSum(long long data) {
-	//HOW DO CHECKSUM HALP
-}
-bool checkByte(long long data, int pos, char checkVal) {
-	char dataByte = byteShift(data, pos);
-	if((dataByte & checkVal) == 0xFF) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-long extractData(long long data) { //still need to do this
-	switch(_blueState) {
-		case storageTube:
-			char storageMask;
-			memcpy(byteShift(data, 5), storageMask, 1);
-			parseStorageMask(storageMask);
-			break;
-		case supplyTube:
-			char supplyMask;
-			memcpy(byteShift(data, 5), supplyMask, 1);
-			parseSupplyMask(supplyMask);
-			break;
-		case radAlert:
-			break;
-		case stopMovement:
-			break;
-		case startMovement:
-			break;
-		case robotStatus:
-			break;
-		case robotHeartbeat:
-			break;
-		case default:
-	}
-}
-void parseStorageMask(char storageMaskTemp) {
-	int counter = 0;
-	for(i=1;i<8;i<<1) {
-		storageMask[counter] = (storageMaskTemp & i);
-		counter++;
-	}
-}
-void parseSupplyMask(char supplyMaskTemp) {
-	int counter = 0;
-	for(i=1;i<8;i<<1) {
-		supplyMask[counter] = (storageMaskTemp & i);
-		counter++;
-	}
-}
-char byteShift(long long inBytes, int amt) {
-	amtFinal = amt*8;
-	char outBit = (inBytes >> amtFinal) & 0x0F;
-	return outBit;
-}
-//method to do line tracking until the robot drives over a line
+// }
+// bool checkValidity(long long data) {
+// 	bool isValid = checkByte(data, delimiter_pos, 0x5F) && checkByte(data, source_pos, 0x00) && checkByte(data, dest_pos, 0x0A) && checkLengthType(data) && checkCheckSum(data);
+// 	return isValid;
+// }
+// bool checkLengthType(long long data) {
+// 	bool result;
+// 	int counter = 0;
+// 	int lengthBits;
+// 	for(i = data; i != 0; i >> 1) {
+// 		counter++;
+// 	}
+// 	checkType(data);
+// 	switch(_blueState) {
+// 		case storageTube:
+// 			result = (counter == storageTube_length*8);
+// 			break;
+// 		case supplyTube:
+// 			result = (counter == supplyTube_length*8);
+// 			break;
+// 		case radAlert:
+// 			result = (counter == radAlert_length*8);
+// 			break;
+// 		case stopMovement:
+// 			result = (counter == stop_length*8);
+// 			break;
+// 		case startMovement:
+// 			result = (counter == start_length*8);
+// 			break;
+// 		case robotStatus:
+// 			result = (counter == status_length*8);
+// 			break;
+// 		case robotHeartbeat:
+// 			result = (counter == heartBeat_length*8);
+// 			break;
+// 		case default:
+// 			break;
+// 	}
+// 	return result;
+// }
+// void checkType(long long data) {
+// 	char msgType = byteShift(data, 2);
+// 	if(checkMsgType(msgType, 0x01)) {
+// 		_blueState = storageTube;
+// 	}
+// 	else if(checkMsgType(msgType, 0x02)) {
+// 		_blueState = supplyTube;
+// 	}
+// 	else if(checkMsgType(msgType, 0x03)) {
+// 		_blueState = radAlert;
+// 	}
+// 	else if(checkMsgType(msgType, 0x04)) {
+// 		_blueState = stopMovement;
+// 	}
+// 	else if(checkMsgType(msgType, 0x05)) {
+// 		_blueState = startMovement;
+// 	}
+// 	else if(checkMsgType(msgType, 0x06)) {
+// 		_blueState = robotStatus;
+// 	}
+// 	else if(checkMsgType(msgType, 0x06)) {
+// 		_blueState = robotHeartbeat;
+// 	}
+// }
+// bool checkMsgType(char msgType, char checkVal) {
+// 	return checkByte((long long)msgType, 0, checkVal);
+// }
+// bool checkCheckSum(long long data) {
+// 	//HOW DO CHECKSUM HALP
+// }
+// bool checkByte(long long data, int pos, char checkVal) {
+// 	char dataByte = byteShift(data, pos);
+// 	if((dataByte & checkVal) == 0xFF) {
+// 		return true;
+// 	}
+// 	else {
+// 		return false;
+// 	}
+// }
+// long extractData(long long data) { //still need to do this
+// 	switch(_blueState) {
+// 		case storageTube:
+// 			char storageMask;
+// 			memcpy(byteShift(data, 5), storageMask, 1);
+// 			parseStorageMask(storageMask);
+// 			break;
+// 		case supplyTube:
+// 			char supplyMask;
+// 			memcpy(byteShift(data, 5), supplyMask, 1);
+// 			parseSupplyMask(supplyMask);
+// 			break;
+// 		case radAlert:
+// 			break;
+// 		case stopMovement:
+// 			break;
+// 		case startMovement:
+// 			break;
+// 		case robotStatus:
+// 			break;
+// 		case robotHeartbeat:
+// 			break;
+// 		case default:
+// 	}
+// }
+// void parseStorageMask(char storageMaskTemp) {
+// 	int counter = 0;
+// 	for(i=1;i<8;i<<1) {
+// 		storageMask[counter] = (storageMaskTemp & i);
+// 		counter++;
+// 	}
+// }
+// void parseSupplyMask(char supplyMaskTemp) {
+// 	int counter = 0;
+// 	for(i=1;i<8;i<<1) {
+// 		supplyMask[counter] = (storageMaskTemp & i);
+// 		counter++;
+// 	}
+// }
+// char byteShift(long long inBytes, int amt) {
+// 	amtFinal = amt*8;
+// 	char outBit = (inBytes >> amtFinal) & 0x0F;
+// 	return outBit;
+// }
+// //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
 	while(crossHit() != true)
@@ -447,7 +449,7 @@ void getError()
 
 //method to see if the far line sensor and at least one other line sensor on on a line or not indicating a cross
 //returns true if a cross is hit, false otherwise 
-boolean crossHit(int lines) 
+boolean crossHit() 
 {
 	if(overLine(lineSenseFarLeft) && (overLine(lineSenseRight) || overLine(lineSenseLeft) || overLine(lineSenseCenter))) 
   	{
@@ -611,7 +613,8 @@ void navigateToDisposal()
 				goXlines(i);
 				turnLeft90();
 				approachReactor();
-				currentXYcoords[]= {i,2};
+				currentXYcoords[0] = i;
+				currentXYcoords[1] = 2;
 				break;
 
 			}
@@ -626,7 +629,8 @@ void navigateToDisposal()
 				goXlines((5-i));
 				turnRight90();
 				approachReactor();
-				currentXYcoords[]= {i,2};
+				currentXYcoords[0] = i;
+				currentXYcoords[1] = 2;
 				break;
 			}
 		}
@@ -652,7 +656,8 @@ void navigateToSupply()
 			{
 				if(supplyFull(i))
 				{
-					XYcoords[] = {i, 0};
+					XYcoords[0] = i; 
+					XYcoords[1] = 0;
 					break;
 				}
 				 
@@ -662,7 +667,8 @@ void navigateToSupply()
 
 			goXlines(1);
 			approachReactor();
-			currentXYcoords[] = {XYcoords[0], 0};
+			currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 
 		}
 		else if(x > XYcoords[0])
@@ -674,7 +680,8 @@ void navigateToSupply()
 		    goXlines(j);
 		    turnLeft90();
 		    approachReactor();
-		    currentXYcoords[] = {XYcoords[0], 0};
+		    currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 		}
 		else
 		{
@@ -685,7 +692,8 @@ void navigateToSupply()
 			goXlines(j);
 			turnRight90();
 			approachReactor();
-			currentXYcoords[] = {XYcoords[0], 0};
+			currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 		}
 
 	}
@@ -695,7 +703,8 @@ void navigateToSupply()
 			{
 				if(supplyFull(i))
 				{
-					XYcoords[] = {i, 0};
+					XYcoords[0] = i; 
+					XYcoords[1] = 0;
 					break;
 				}
 				 
@@ -705,7 +714,8 @@ void navigateToSupply()
 
 			goXlines(1);
 			approachReactor();
-			currentXYcoords[] = {XYcoords[0], 0};
+			currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 
 		}
 		else if(x > XYcoords[0])
@@ -717,7 +727,8 @@ void navigateToSupply()
 		    goXlines(j);
 		    turnLeft90();
 		    approachReactor();
-		    currentXYcoords[] = {XYcoords[0], 0};
+		    currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 		}
 		else
 		{
@@ -728,7 +739,8 @@ void navigateToSupply()
 			goXlines(j);
 			turnRight90();
 			approachReactor();
-			currentXYcoords[] = {XYcoords[0], 0};
+			currentXYcoords[0] = XYcoords[0];
+			currentXYcoords[1] = 0;
 		}
 
 	}
@@ -736,6 +748,18 @@ void navigateToSupply()
 // uses Bluetooth to check availablity of a given supply station and returns true if station is full
 // param: int x where x is the given station number
 boolean supplyFull(int x)
+{
+
+}
+void turnLeft90()
+{
+
+}
+void turnRight90()
+{
+
+}
+void turn180()
 {
 
 }
