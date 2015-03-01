@@ -79,6 +79,7 @@ enum armState{ //needs use
 };
 
 enum State{
+	start,
 	TESTING,
 	findStart,
 	findReactorB,
