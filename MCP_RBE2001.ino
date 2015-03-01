@@ -32,20 +32,21 @@
 #define upPosition 90 
 #define downPosition 0
 
-#define delimiter_pos 5
-#define length_pos 4
-#define type_pos 3
-#define source_pos 2
-#define dest_pos 1
-#define checksum_pos 0
+#define lengthPos 1
+#define typePos 2
+#define dataPos 5
+#define delimiterPos 0
+#define msgSourcePos 3
+#define msgDestPos 4
+#define checkSumOffset 1
 
-#define storageTube_length 7
-#define supplyTube_length 7
-#define radAlert_length 7
-#define stop_length 6
-#define start_length 6
-#define status_length 9
-#define heartBeat_length 6
+#define storageID 0x01
+#define supplyID 0x02
+#define radID 0x03
+#define stopID 0x04
+#define resumeID 0x05
+#define statusID 0x06
+#define heartBeatID 0x07
 
 char reactor; //reactor type
 int lineCount; 
@@ -63,9 +64,13 @@ int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
 
 
-long long myData;
-bool storageMask[4];
-bool supplyMask[4];
+byte myData;
+byte myDataArray[10];
+byte data[3];
+int blueToothCounter = 0;
+bool receivingData = false;
+bool supplyTubes[4];
+bool storageTubes[4];
 
 Servo leftDrive;
 Servo rightDrive;
@@ -157,7 +162,15 @@ void resetISR()
 }
 
 void loop(){
-  
+  	if(myClient.receive(&myData)) {
+		if(receivingData == false && myData == delimiter) {
+			receivingData = true;
+			blueToothCounter = 0;
+		}
+		if(receivingData == true) {
+			parseNewByte(myData);
+		}
+	}
  	stateMachine();
 
 }
@@ -267,150 +280,134 @@ void stop()
 
  void HundredMsISR() 
  {
-// 	fetchBluetooth();
-// 	extractBluetooth();
-// 	heartBeatCounter++;
-// 	if(heartBeatCounter == 5) //every .5 seconds
-// 	{
-// 		doHeartBeat();
-// 		heartBeatCounter = 0;
-// 	}
+ 	heartBeatCounter++;
+ 	if(heartBeatCounter == 5) //every .5 seconds
+ 	{
+ 		sendHeartBeat();
+ 		heartBeatCounter = 0;
+ 	}
  }
-// void fetchBluetooth() { 
-// 	fetchBluetooth(&myData);
-// }
-// void extractBluetooth()
-// {
-// 	noInterrupts();
-// 	long long myDataTemp = myData;
-// 	interrupts();
-// 	if(checkValidity(myDataTemp)) {
-// 		extractData();
-// 	}
-
-// }
-// bool checkValidity(long long data) {
-// 	bool isValid = checkByte(data, delimiter_pos, 0x5F) && checkByte(data, source_pos, 0x00) && checkByte(data, dest_pos, 0x0A) && checkLengthType(data) && checkCheckSum(data);
-// 	return isValid;
-// }
-// bool checkLengthType(long long data) {
-// 	bool result;
-// 	int counter = 0;
-// 	int lengthBits;
-// 	for(i = data; i != 0; i >> 1) {
-// 		counter++;
-// 	}
-// 	checkType(data);
-// 	switch(_blueState) {
-// 		case storageTube:
-// 			result = (counter == storageTube_length*8);
-// 			break;
-// 		case supplyTube:
-// 			result = (counter == supplyTube_length*8);
-// 			break;
-// 		case radAlert:
-// 			result = (counter == radAlert_length*8);
-// 			break;
-// 		case stopMovement:
-// 			result = (counter == stop_length*8);
-// 			break;
-// 		case startMovement:
-// 			result = (counter == start_length*8);
-// 			break;
-// 		case robotStatus:
-// 			result = (counter == status_length*8);
-// 			break;
-// 		case robotHeartbeat:
-// 			result = (counter == heartBeat_length*8);
-// 			break;
-// 		case default:
-// 			break;
-// 	}
-// 	return result;
-// }
-// void checkType(long long data) {
-// 	char msgType = byteShift(data, 2);
-// 	if(checkMsgType(msgType, 0x01)) {
-// 		_blueState = storageTube;
-// 	}
-// 	else if(checkMsgType(msgType, 0x02)) {
-// 		_blueState = supplyTube;
-// 	}
-// 	else if(checkMsgType(msgType, 0x03)) {
-// 		_blueState = radAlert;
-// 	}
-// 	else if(checkMsgType(msgType, 0x04)) {
-// 		_blueState = stopMovement;
-// 	}
-// 	else if(checkMsgType(msgType, 0x05)) {
-// 		_blueState = startMovement;
-// 	}
-// 	else if(checkMsgType(msgType, 0x06)) {
-// 		_blueState = robotStatus;
-// 	}
-// 	else if(checkMsgType(msgType, 0x06)) {
-// 		_blueState = robotHeartbeat;
-// 	}
-// }
-// bool checkMsgType(char msgType, char checkVal) {
-// 	return checkByte((long long)msgType, 0, checkVal);
-// }
-// bool checkCheckSum(long long data) {
-// 	//HOW DO CHECKSUM HALP
-// }
-// bool checkByte(long long data, int pos, char checkVal) {
-// 	char dataByte = byteShift(data, pos);
-// 	if((dataByte & checkVal) == 0xFF) {
-// 		return true;
-// 	}
-// 	else {
-// 		return false;
-// 	}
-// }
-// long extractData(long long data) { //still need to do this
-// 	switch(_blueState) {
-// 		case storageTube:
-// 			char storageMask;
-// 			memcpy(byteShift(data, 5), storageMask, 1);
-// 			parseStorageMask(storageMask);
-// 			break;
-// 		case supplyTube:
-// 			char supplyMask;
-// 			memcpy(byteShift(data, 5), supplyMask, 1);
-// 			parseSupplyMask(supplyMask);
-// 			break;
-// 		case radAlert:
-// 			break;
-// 		case stopMovement:
-// 			break;
-// 		case startMovement:
-// 			break;
-// 		case robotStatus:
-// 			break;
-// 		case robotHeartbeat:
-// 			break;
-// 		case default:
-// 	}
-// }
-// void parseStorageMask(char storageMaskTemp) {
-// 	int counter = 0;
-// 	for(i=1;i<8;i<<1) {
-// 		storageMask[counter] = (storageMaskTemp & i);
-// 		counter++;
-// 	}
-// }
-// void parseSupplyMask(char supplyMaskTemp) {
-// 	int counter = 0;
-// 	for(i=1;i<8;i<<1) {
-// 		supplyMask[counter] = (storageMaskTemp & i);
-// 		counter++;
-// 	}
-// }
-// char byteShift(long long inBytes, int amt) {
-// 	amtFinal = amt*8;
-// 	char outBit = (inBytes >> amtFinal) & 0x0F;
-// 	return outBit;
-// }
+ void parseNewByte(byte data) {
+	myDataArray[blueToothCounter] = data;
+	if(blueToothCounter < 10) {
+		blueToothCounter++;
+	}
+	else {
+		parseNewPacket();
+	}
+}
+void parseNewPacket() {
+	int dataLength = myDataArray[lengthPos];
+	for(i=0; i < dataLength; i++) {
+		data[i] = myDataArray[dataPos + i];
+	}
+	bool validPacket = checkDelimiter(myDataArray[delimiterPos]);
+	bool validSource = checkSource(myDataArray[msgSourcePos]);
+	bool validDest = checkDest(myDataArray[msgDestPos]);
+	bool validCheckSum = checkSum(myDataArray[checkSumPos + dataLength], dataLength);
+	String dataType = checkType(myDataArray[typePos]);
+	if(validPacket && validSource && validDest && validCheckSum) {
+		executeData(dataType, dataLength);
+	}
+}
+bool checkDelimiter(byte delimiterByte) {
+	return delimiterByte = delimiterID;
+}
+bool checkSource(byte sourceByte) {
+	return sourceByte = fieldID;
+}
+bool checkDest(byte destByte) {
+	return destByte = teamID;
+}
+bool checkSum(byte checkSumByte) {
+	return true; //how do you checksum?
+}
+String checkType(byte typeByte) {
+	String type;
+	if(typeByte == storageID) {
+		type = "storage";
+	}
+	else if(typeByte == supplyID) {
+		type = "supply";
+	}
+	else if(typeByte == radID) {
+		type = "rad";
+	}
+	else if(typeByte == stopID) {
+		type = "stop";
+	}
+	else if(typeByte == resumeID) {
+		type = "resume";
+	}
+	else if(typeByte == statusID) {
+		type = "status";
+	}
+	else if(typeByte == heartBeatID) {
+		type = "heartbeat";
+	}
+}
+void executeData(String dataType, int dataLength) {
+	byte data[dataLength];
+	if(dataType == "storage") {
+		parseStorage(myDataArray[dataPos]);
+	}
+	else if(dataType == "supply") {
+		parseSupply(myDataArrat[dataPos]);
+	}
+	else if(dataType == "stop") {
+		stopMovement();
+	}
+	else if(dataType == "resume") {
+		resumeMovement();
+	}
+}
+void sendHeartBeat() {
+	sendMessage(heartBeat, heartBeatID);
+}
+void sendRadAlert(bool alertType) {
+	sendMessage(radAlert, radAlertID);
+}
+void sendStatus(byte movementStatus, byte gripperStatus, byte operationStatus) {
+	byte dataFinal[9];
+	dataFinal[0] = delimiter;
+	dataFinal[1] = 0x09;
+	dataFinal[2] = 0x06;
+	dataFinal[3] = teamID;
+	dataFinal[4] = fieldID;
+	dataFinal[5] = movementStatus;
+	dataFinal[6] = gripperStatus;
+	dataFinal[7] = operationStatus;
+	for(i=0; i<9; i++) {
+		myMaster.send(dataFinal[i]);
+	}
+}
+void sendMessage(byte data, byte dataType) {
+	byte dataFinal[6];
+	dataFinal[0] = delimiter;
+	dataFinal[1] = 0x06;
+	dataFinal[2] = dataType;
+	dataFinal[3] = teamID;
+	dataFinal[4] = fieldID;
+	dataFinal[5] = data;
+	dataFinal[6] = getCheckSum(data);
+	for(i=0; i<6; i++) {
+		myMaster.send(dataFinal[i]);
+	}
+}
+void parseSupply(byte bitMask) {
+	compareByte = 0x01;
+	for(i=0; i<4; i++) {
+		supplyTubes[i] = ((bitMask & compareByte) == 0xFF);
+		compareByte << 1;
+	}
+}
+void parseStorage(byte bitMask) {
+	compareByte = 0x01;
+	for(i=0; i<4; i++) {
+		storageTubes[i] = ((bitMask & compareByte) == 0xFF);
+		compareByte << 1;
+	}
+}
 // //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
