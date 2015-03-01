@@ -116,7 +116,8 @@ void setup(){
 	grabberServo.attach(grabberServoPin);
 
 	//Serial1.begin(115200);
-	attachInterrupt(buttonIntPin, resetISR, CHANGE);
+	pinMode(buttonIntPin, INPUT_PULLUP);
+	attachInterrupt(0, resetISR, CHANGE);
 	pinMode(lineSenseRight, INPUT);
 	pinMode(lineSenseLeft, INPUT);
 	pinMode(lineSenseCenter, INPUT);
