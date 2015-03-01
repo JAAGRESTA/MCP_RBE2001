@@ -38,7 +38,7 @@
 #define delimiterPos 0
 #define msgSourcePos 3
 #define msgDestPos 4
-#define checkSumOffset 1
+#define checkSumPos 1
 
 #define storageID 0x01
 #define supplyID 0x02
@@ -47,6 +47,12 @@
 #define resumeID 0x05
 #define statusID 0x06
 #define heartBeatID 0x07
+#define fieldID 0x00
+#define teamID 0x0A
+#define newRodID 0x2C
+#define spentRodID 0xFF
+
+#define delimiter 0x2C
 
 char reactor; //reactor type
 int lineCount; 
@@ -71,6 +77,9 @@ int blueToothCounter = 0;
 bool receivingData = false;
 bool supplyTubes[4];
 bool storageTubes[4];
+
+BluetoothClient myClient;
+BluetoothMaster myMaster;
 
 Servo leftDrive;
 Servo rightDrive;
@@ -138,8 +147,6 @@ void setup(){
 
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(HundredMsISR);
-	BluetoothClient myClient = new BluetoothClient();
-	BluetoothMaster myMaster = new BluetoothMaster();
 }
 
 //method to test stand-alone modules of code for individual testing
@@ -162,7 +169,8 @@ void resetISR()
 }
 
 void loop(){
-  	if(myClient.receive(&myData)) {
+	byte *myDataPointer = &myData;
+  	if(myClient.receive(*myDataPointer)) {
 		if(receivingData == false && myData == delimiter) {
 			receivingData = true;
 			blueToothCounter = 0;
@@ -298,7 +306,7 @@ void stop()
 }
 void parseNewPacket() {
 	int dataLength = myDataArray[lengthPos];
-	for(i=0; i < dataLength; i++) {
+	for(int i=0; i < dataLength; i++) {
 		data[i] = myDataArray[dataPos + i];
 	}
 	bool validPacket = checkDelimiter(myDataArray[delimiterPos]);
@@ -311,7 +319,7 @@ void parseNewPacket() {
 	}
 }
 bool checkDelimiter(byte delimiterByte) {
-	return delimiterByte = delimiterID;
+	return delimiterByte = delimiter;
 }
 bool checkSource(byte sourceByte) {
 	return sourceByte = fieldID;
@@ -319,7 +327,7 @@ bool checkSource(byte sourceByte) {
 bool checkDest(byte destByte) {
 	return destByte = teamID;
 }
-bool checkSum(byte checkSumByte) {
+bool checkSum(byte checkSumByte, int length) {
 	return true; //how do you checksum?
 }
 String checkType(byte typeByte) {
@@ -352,58 +360,68 @@ void executeData(String dataType, int dataLength) {
 		parseStorage(myDataArray[dataPos]);
 	}
 	else if(dataType == "supply") {
-		parseSupply(myDataArrat[dataPos]);
+		parseSupply(myDataArray[dataPos]);
 	}
 	else if(dataType == "stop") {
-		stopMovement();
+		//stopMovement();
 	}
 	else if(dataType == "resume") {
-		resumeMovement();
+		//resumeMovement();
 	}
 }
 void sendHeartBeat() {
-	sendMessage(heartBeat, heartBeatID);
+	byte dataFinal[6];
+	dataFinal[0] = delimiter;
+	dataFinal[1] = 0x05;
+	dataFinal[2] = heartBeatID;
+	dataFinal[3] = teamID;
+	dataFinal[4] = fieldID;
+	dataFinal[5] = getCheckSumHeartbeat();
+	myMaster.sendPkt(dataFinal, 6);
 }
-void sendRadAlert(bool alertType) {
-	sendMessage(radAlert, radAlertID);
+byte getCheckSumHeartbeat() {
+	return 0x00; //CHANGE THIS TOO AAAAAAA
+}
+void sendRadAlert(byte alertType) {
+	byte dataFinal[7];
+	dataFinal[0] = delimiter;
+	dataFinal[1] = 0x06;
+	dataFinal[2] = alertType;
+	dataFinal[3] = teamID;
+	dataFinal[4] = fieldID;
+	dataFinal[5] = alertType;
+	dataFinal[6] = getCheckSumRadAlert(alertType);
+	myMaster.sendPkt(dataFinal, 7);
+}
+byte getCheckSumRadAlert(byte alertType) {
+	return 0x00; //CHANGE THIS PLS
 }
 void sendStatus(byte movementStatus, byte gripperStatus, byte operationStatus) {
 	byte dataFinal[9];
 	dataFinal[0] = delimiter;
 	dataFinal[1] = 0x09;
-	dataFinal[2] = 0x06;
+	dataFinal[2] = statusID;
 	dataFinal[3] = teamID;
 	dataFinal[4] = fieldID;
 	dataFinal[5] = movementStatus;
 	dataFinal[6] = gripperStatus;
 	dataFinal[7] = operationStatus;
-	for(i=0; i<9; i++) {
-		myMaster.send(dataFinal[i]);
-	}
+	dataFinal[8] = getCheckSumStatus(movementStatus, gripperStatus, operationStatus);
+	myMaster.sendPkt(dataFinal, 9);
 }
-void sendMessage(byte data, byte dataType) {
-	byte dataFinal[6];
-	dataFinal[0] = delimiter;
-	dataFinal[1] = 0x06;
-	dataFinal[2] = dataType;
-	dataFinal[3] = teamID;
-	dataFinal[4] = fieldID;
-	dataFinal[5] = data;
-	dataFinal[6] = getCheckSum(data);
-	for(i=0; i<6; i++) {
-		myMaster.send(dataFinal[i]);
-	}
+byte getCheckSumStatus(byte movementStatus, byte gripperStatus, byte operationStatus) {
+	return 0x00; //THIS IS FOCKIN RUBBISH M8
 }
 void parseSupply(byte bitMask) {
-	compareByte = 0x01;
-	for(i=0; i<4; i++) {
+	byte compareByte = 0x01;
+	for(int i=0; i<4; i++) {
 		supplyTubes[i] = ((bitMask & compareByte) == 0xFF);
 		compareByte << 1;
 	}
 }
 void parseStorage(byte bitMask) {
-	compareByte = 0x01;
-	for(i=0; i<4; i++) {
+	byte compareByte = 0x01;
+	for(int i=0; i<4; i++) {
 		storageTubes[i] = ((bitMask & compareByte) == 0xFF);
 		compareByte << 1;
 	}
