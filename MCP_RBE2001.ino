@@ -77,6 +77,7 @@ enum armState{ //needs use
 };
 
 enum State{
+	TESTING,
 	findStart,
 	findReactorB,
 	grabSpent,
@@ -128,6 +129,12 @@ void setup(){
 	BluetoothMaster blueMaster = new BluetoothMaster();
 }
 
+//method to test stand-alone modules of code for individual testing
+void runTest()
+{
+	//insert test code here
+}
+
 void loop(){
   
  	stateMachine();
@@ -136,6 +143,8 @@ void loop(){
 //master state machine
 void stateMachine(){
 	switch (state) {
+		case TESTING:
+			runTest();
 		case findStart: 
 			followLine();
 			turnRight90(); //make this
