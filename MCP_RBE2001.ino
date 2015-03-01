@@ -6,15 +6,17 @@
 #define leftDrivePin 26
 #define rightDrivePin 27
 #define fourBarPin 25
-#define rackMotorPin 26
+#define rackMotorPin 26 //not a thing at the moment
 #define grabberServoPin 27
 #define limitPin A0
-#define lineSensePin1 A1
-#define lineSensePin2 A2
-#define lineSensePin3 A3
-#define lineSensePin4 A4
+#define lineSenseRight A1
+#define lineSenseLeft A2
+#define lineSenseCenter A3
+#define lineSenseFarLeft A4
 #define potPin A5
-#define encoderPin1 A6
+#define encoderRight A6
+#define encoderLeft A7 //not installed yet
+#define buttonIntPin 2
 
 #define stopSpeed 90
 #define potRange 180
@@ -110,14 +112,16 @@ void setup(){
 	fourBarMotor.attach(fourBarPin,1000,2000);
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
+
 	Serial1.begin(115200);
-	pinMode(lineSensePin1, INPUT);
-	pinMode(lineSensePin2, INPUT);
-	pinMode(lineSensePin3, INPUT);
-	pinMode(lineSensePin4, INPUT);
+	attachInterrupt(buttonIntPin, resetISR, CHANGE);
+	pinMode(lineSenseRight, INPUT);
+	pinMode(lineSenseLeft, INPUT);
+	pinMode(lineSenseCenter, INPUT);
+	pinMode(lineSenseFarLeft, INPUT);
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
-	state = findReactor;
+	state = start;
 
 	reactor = 'A'; //reactor type
 	lineCount = 0; //counts the amount of lines
@@ -135,6 +139,19 @@ void runTest()
 	//insert test code here
 }
 
+//when the button is pushed, stop or resume robot operation
+void resetISR()
+{
+	if(state == start)
+	{
+		state = TESTING;
+	} 
+	else
+	{
+		state = idle;
+	}
+}
+
 void loop(){
   
  	stateMachine();
@@ -142,6 +159,8 @@ void loop(){
 }
 //master state machine
 void stateMachine(){
+while(state != idle)
+{
 	switch (state) {
 		case TESTING:
 			runTest();
@@ -208,8 +227,11 @@ void stateMachine(){
 	    	releaseGrab();
 	    	rackReverse();
 	    	break;
+	    case idle:
+	    	stop();
+	    	break;
 	}
-
+}
 }
 
 //returns boolean if a certain amount of lines have been hit
@@ -418,7 +440,7 @@ void goXlines(int lineNum)
 //finds difference in line sensor values, sets that value to a useable motor speed
 void getError()
 {
- 	measError = analogRead(lineSensePin1) - analogRead(lineSensePin3);
+ 	measError = analogRead(lineSenseRight) - analogRead(lineSenseLeft);
 	error = map(measError, -1023, 1023, -90, 90);
 }
 
@@ -426,7 +448,7 @@ void getError()
 //returns true if a cross is hit, false otherwise 
 boolean crossHit(int lines) 
 {
-	if(overLine(lineSensePin4) && (overLine(lineSensePin1) || overLine(lineSensePin2) || overLine(lineSensePin3))) 
+	if(overLine(lineSenseFarLeft) && (overLine(lineSenseRight) || overLine(lineSenseLeft) || overLine(lineSenseCenter))) 
   	{
   		lineCount++;
   		return true;
