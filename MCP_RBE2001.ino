@@ -120,7 +120,7 @@ void setup(){
 	rackMotor.attach(rackMotorPin,1000,2000);
 	grabberServo.attach(grabberServoPin);
 
-	//Serial1.begin(115200);
+	Serial1.begin(115200);
 	pinMode(buttonIntPin, INPUT_PULLUP);
 	attachInterrupt(0, resetISR, CHANGE);
 	pinMode(lineSenseRight, INPUT);
@@ -138,8 +138,8 @@ void setup(){
 
 	Timer1.initialize(100000);
 	Timer1.attachInterrupt(HundredMsISR);
-	//BluetoothClient blueClient = new BluetoothClient();
-	//BluetoothMaster blueMaster = new BluetoothMaster();
+	BluetoothClient myClient = new BluetoothClient();
+	BluetoothMaster myMaster = new BluetoothMaster();
 }
 
 //method to test stand-alone modules of code for individual testing
