@@ -73,14 +73,14 @@ int encoderLeftCount = 0, encoderRightCount = 0;
 float turn90Threshold = 123, turn180Threshold = 246, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 
 
-byte myData;
-byte myDataArray[10];
-byte data[3];
-int blueToothCounter = 0;
-bool receivingData = false;
-bool supplyTubes[4];
+bool isReceivingData = false;
+byte *myData[10];
+byte *data[3];
+byte type;
 bool storageTubes[4];
+bool supplyTubes[4];
 
+ReactorProtocol myRobot(0x0A);
 BluetoothClient myClient;
 BluetoothMaster myMaster;
 
@@ -175,18 +175,51 @@ void runTest()
 // }
 
 void loop(){
-	byte *myDataPointer = &myData;
-  	if(myClient.receive(*myDataPointer)) {
-		if(receivingData == false && myData == delimiter) {
-			receivingData = true;
-			blueToothCounter = 0;
-		}
-		if(receivingData == true) {
-			parseNewByte(myData);
+	if(myMaster.readPacket(myData[0])) {
+		if(myRobot.getData(myData[0], data[0], type)) {
+			parseData(data[0], type);
 		}
 	}
  	stateMachine();
 
+}
+void parseData(byte *data, byte type) {
+	switch(type) {
+		case 1:
+			parseNewTubes(data[0], 0x01);
+			break;
+		case 2:
+			parseNewTubes(data[0], 0x02);
+			break;
+		case 3:
+			break;
+		case 4:
+			stopRobot();
+			break;
+		case 5:
+			resumeRobot();
+			break;
+		case 6:
+			break;
+		case 7:
+			break;
+	}
+}
+void parseNewTubes(byte mask, byte ID) {
+	byte comparator = 0x01;
+	switch(ID) {
+		case 1:
+			for(int i=0; i<4; i++) {
+				storageTubes[i] = ((mask & comparator) == comparator);
+				comparator << 1;
+			}
+			break;
+		case 2:
+			for(int i=0; i<4; i++) {
+				supplyTubes[i] = ((mask & comparator) == comparator);
+				comparator << 1;
+			}
+	}
 }
 //master state machine
  void stateMachine(){
@@ -307,137 +340,7 @@ void stop()
  		heartBeatCounter = 0;
  	}
  }
- void parseNewByte(byte data) {
-	myDataArray[blueToothCounter] = data;
-	if(blueToothCounter < 10) {
-		blueToothCounter++;
-	}
-	else {
-		parseNewPacket();
-	}
-}
-void parseNewPacket() {
-	int dataLength = myDataArray[lengthPos];
-	for(int i=0; i < dataLength; i++) {
-		data[i] = myDataArray[dataPos + i];
-	}
-	bool validPacket = checkDelimiter(myDataArray[delimiterPos]);
-	bool validSource = checkSource(myDataArray[msgSourcePos]);
-	bool validDest = checkDest(myDataArray[msgDestPos]);
-	bool validCheckSum = checkSum(myDataArray[checkSumPos + dataLength], dataLength);
-	String dataType = checkType(myDataArray[typePos]);
-	if(validPacket && validSource && validDest && validCheckSum) {
-		executeData(dataType, dataLength);
-	}
-}
-bool checkDelimiter(byte delimiterByte) {
-	return delimiterByte = delimiter;
-}
-bool checkSource(byte sourceByte) {
-	return sourceByte = fieldID;
-}
-bool checkDest(byte destByte) {
-	return destByte = teamID;
-}
-bool checkSum(byte checkSumByte, int length) {
-	return true; //how do you checksum?
-}
-String checkType(byte typeByte) {
-	String type;
-	if(typeByte == storageID) {
-		type = "storage";
-	}
-	else if(typeByte == supplyID) {
-		type = "supply";
-	}
-	else if(typeByte == radID) {
-		type = "rad";
-	}
-	else if(typeByte == stopID) {
-		type = "stop";
-	}
-	else if(typeByte == resumeID) {
-		type = "resume";
-	}
-	else if(typeByte == statusID) {
-		type = "status";
-	}
-	else if(typeByte == heartBeatID) {
-		type = "heartbeat";
-	}
-}
-void executeData(String dataType, int dataLength) {
-	byte data[dataLength];
-	if(dataType == "storage") {
-		parseStorage(myDataArray[dataPos]);
-	}
-	else if(dataType == "supply") {
-		parseSupply(myDataArray[dataPos]);
-	}
-	else if(dataType == "stop") {
-		//stopMovement();
-	}
-	else if(dataType == "resume") {
-		//resumeMovement();
-	}
-}
-void sendHeartBeat() {
-	byte dataFinal[6];
-	dataFinal[0] = delimiter;
-	dataFinal[1] = 0x05;
-	dataFinal[2] = heartBeatID;
-	dataFinal[3] = teamID;
-	dataFinal[4] = fieldID;
-	dataFinal[5] = getCheckSumHeartbeat();
-	myMaster.sendPkt(dataFinal, 6);
-}
-byte getCheckSumHeartbeat() {
-	return 0x00; //CHANGE THIS TOO AAAAAAA
-}
-void sendRadAlert(byte alertType) {
-	byte dataFinal[7];
-	dataFinal[0] = delimiter;
-	dataFinal[1] = 0x06;
-	dataFinal[2] = alertType;
-	dataFinal[3] = teamID;
-	dataFinal[4] = fieldID;
-	dataFinal[5] = alertType;
-	dataFinal[6] = getCheckSumRadAlert(alertType);
-	myMaster.sendPkt(dataFinal, 7);
-}
-byte getCheckSumRadAlert(byte alertType) {
-	return 0x00; //CHANGE THIS PLS
-}
-void sendStatus(byte movementStatus, byte gripperStatus, byte operationStatus) {
-	byte dataFinal[9];
-	dataFinal[0] = delimiter;
-	dataFinal[1] = 0x09;
-	dataFinal[2] = statusID;
-	dataFinal[3] = teamID;
-	dataFinal[4] = fieldID;
-	dataFinal[5] = movementStatus;
-	dataFinal[6] = gripperStatus;
-	dataFinal[7] = operationStatus;
-	dataFinal[8] = getCheckSumStatus(movementStatus, gripperStatus, operationStatus);
-	myMaster.sendPkt(dataFinal, 9);
-}
-byte getCheckSumStatus(byte movementStatus, byte gripperStatus, byte operationStatus) {
-	return 0x00; //THIS IS FOCKIN RUBBISH M8
-}
-void parseSupply(byte bitMask) {
-	byte compareByte = 0x01;
-	for(int i=0; i<4; i++) {
-		supplyTubes[i] = ((bitMask & compareByte) == 0xFF);
-		compareByte << 1;
-	}
-}
-void parseStorage(byte bitMask) {
-	byte compareByte = 0x01;
-	for(int i=0; i<4; i++) {
-		storageTubes[i] = ((bitMask & compareByte) == 0xFF);
-		compareByte << 1;
-	}
-}
+
 // //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
