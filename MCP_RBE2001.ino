@@ -5,9 +5,9 @@
 #include "ReactorProtocol.h"
 
 //all pins are temporary and need changing
-#define leftDrivePin 26
-#define rightDrivePin 27
-#define fourBarPin 25
+#define leftDrivePin 10
+#define rightDrivePin 11
+#define fourBarPin 4
 #define rackMotorPin 26 //not a thing at the moment
 #define grabberServoPin 22
 #define limitPin A0
@@ -19,7 +19,7 @@
 #define encoderRight 20
 #define encoderLeft 19 
 #define buttonIntPin 2
-#define flipperPin 29
+#define flipperPin 5
 
 #define stopSpeed 90
 #define potRange 180
