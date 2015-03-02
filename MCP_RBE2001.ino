@@ -14,8 +14,8 @@
 #define lineSenseCenter A3
 #define lineSenseFarLeft A4
 #define potPin A5
-#define encoderRight A6
-#define encoderLeft A7 //not installed yet
+#define encoderRight 20
+#define encoderLeft 19 
 #define buttonIntPin 2
 
 #define stopSpeed 90
@@ -141,9 +141,9 @@ void setup(){
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	pinMode(encoderLeft, INPUT);
-	attachInterrupt(1, encoderLeftISR, RISING);
+	attachInterrupt(4, encoderLeftISR, RISING);
 	pinMode(encoderRight, INPUT);
-	attachInterrupt(2, encoderRightISR, RISING);
+	attachInterrupt(3, encoderRightISR, RISING);
 
 	state = start;
 	armStatus = DOWN;
