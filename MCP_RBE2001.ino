@@ -68,6 +68,8 @@ float adjustedSpeed, pGain, iGain, dGain;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
+int encoderLeftCount = 0, encoderRightCount = 0;
+float turn90Threshold = 70.35, turn180Threshold = 70.35, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 
 
 byte myData;
@@ -138,6 +140,11 @@ void setup(){
 	pinMode(lineSenseFarLeft, INPUT);
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
+	pinMode(encoderLeft, INPUT);
+	attachInterrupt(1, encoderLeftISR, RISING);
+	pinMode(encoderRight, INPUT);
+	attachInterrupt(2, encoderRightISR, RISING);
+
 	state = start;
 	armStatus = DOWN;
 
@@ -277,6 +284,11 @@ void forward()
 {
 	leftDrive.write(leftFWD);
 	rightDrive.write(rightFWD);
+}
+void backward()
+{
+	leftDrive.write(leftBWD);
+	rightDrive.write(rightBWD);
 }
 
 //stop both motors
@@ -656,7 +668,9 @@ void navigateToDisposal()
 // param: int x where x is the station number
 boolean disposalEmpty(int x)
 {
-
+	int i;
+	i = x-1;
+	return storageTubes[i];
 }
 // navigates to Supply based off availablity of supply and closest coordinates
 void navigateToSupply()
@@ -765,17 +779,60 @@ void navigateToSupply()
 // param: int x where x is the given station number
 boolean supplyFull(int x)
 {
-
+	int i;
+	i = x-1;
+	return supplyTubes[i];
 }
 void turnLeft90()
 {
-
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount >= forwardThreshold) && (encoderRightCount >= forwardThreshold))
+	{
+		forward();
+	}
+	
+	while((encoderLeftCount >= turn90Threshold) && (encoderRightCount >= turn90Threshold))
+	{
+		leftDrive.write(leftBWD);
+		rightDrive.write(rightFWD);
+	}
 }
 void turnRight90()
 {
-
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount >= forwardThreshold) && (encoderRightCount >= forwardThreshold))
+	{
+		forward();
+	}
+	
+	while((encoderLeftCount >= turn90Threshold) && (encoderRightCount >= turn90Threshold))
+	{
+		leftDrive.write(leftFWD);
+		rightDrive.write(rightBWD);
+	}
 }
 void turn180()
 {
-
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount >= backwardThreshold) && (encoderRightCount >= backwardThreshold))
+	{
+		backward();
+	}
+	
+	while((encoderLeftCount >= turn180Threshold) && (encoderRightCount >= turn180Threshold))
+	{
+		leftDrive.write(leftBWD);
+		rightDrive.write(rightBWD);
+	}
+}
+void encoderLeftISR()
+{
+	encoderLeftCount++;
+}
+void encoderRightISR()
+{
+	encoderRightCount++;
 }
