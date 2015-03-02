@@ -17,15 +17,16 @@
 #define encoderRight 20
 #define encoderLeft 19 
 #define buttonIntPin 2
+#define flipperPin 29
 
 #define stopSpeed 90
 #define potRange 180
-#define leftFWD 0
-#define rightFWD 170
-#define leftBWD 180
-#define rightBWD 0
-#define baseSpeedLeft 50
-#define baseSpeedRight 120
+#define leftFWD 20
+#define rightFWD 130
+#define leftBWD 130
+#define rightBWD 20
+#define baseSpeedLeft 20
+#define baseSpeedRight 130
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
@@ -69,7 +70,7 @@ float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
 int encoderLeftCount = 0, encoderRightCount = 0;
-float turn90Threshold = 70.35, turn180Threshold = 70.35, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
+float turn90Threshold = 123, turn180Threshold = 246, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 
 
 byte myData;
@@ -137,9 +138,9 @@ void setup(){
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	pinMode(encoderLeft, INPUT);
-	//attachInterrupt(4, encoderLeftISR, RISING);
+	attachInterrupt(4, encoderLeftISR, RISING);
 	pinMode(encoderRight, INPUT);
-	//attachInterrupt(3, encoderRightISR, RISING);
+	attachInterrupt(3, encoderRightISR, RISING);
 
 	state = TESTING;
 	armStatus = DOWN;
@@ -155,7 +156,8 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	forward();
+	turnLeft90();
+	turnRight90();
 	//insert test code here
 }
 
@@ -785,12 +787,13 @@ void turnLeft90()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount >= forwardThreshold) && (encoderRightCount >= forwardThreshold))
+	while((encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
 	{
 		forward();
 	}
-	
-	while((encoderLeftCount >= turn90Threshold) && (encoderRightCount >= turn90Threshold))
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
 	{
 		leftDrive.write(leftBWD);
 		rightDrive.write(rightFWD);
@@ -800,12 +803,13 @@ void turnRight90()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount >= forwardThreshold) && (encoderRightCount >= forwardThreshold))
+	while((encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
 	{
 		forward();
 	}
-	
-	while((encoderLeftCount >= turn90Threshold) && (encoderRightCount >= turn90Threshold))
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
 	{
 		leftDrive.write(leftFWD);
 		rightDrive.write(rightBWD);
@@ -815,15 +819,16 @@ void turn180()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount >= backwardThreshold) && (encoderRightCount >= backwardThreshold))
+	while((encoderLeftCount < backwardThreshold) && (encoderRightCount < backwardThreshold))
 	{
 		backward();
 	}
-	
-	while((encoderLeftCount >= turn180Threshold) && (encoderRightCount >= turn180Threshold))
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	while((encoderLeftCount < turn180Threshold) && (encoderRightCount < turn180Threshold))
 	{
 		leftDrive.write(leftBWD);
-		rightDrive.write(rightBWD);
+		rightDrive.write(rightFWD);
 	}
 }
 void encoderLeftISR()
