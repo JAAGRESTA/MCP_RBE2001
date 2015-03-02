@@ -7,7 +7,7 @@
 #define rightDrivePin 27
 #define fourBarPin 25
 #define rackMotorPin 26 //not a thing at the moment
-#define grabberServoPin 27
+#define grabberServoPin 22
 #define limitPin A0
 #define lineSenseRight A1
 #define lineSenseLeft A2
@@ -20,12 +20,12 @@
 
 #define stopSpeed 90
 #define potRange 180
-#define leftFWD 180
-#define rightFWD 0
-#define leftBWD 0
-#define rightBWD 180
-#define baseSpeedLeft 130
-#define baseSpeedRight 50
+#define leftFWD 0
+#define rightFWD 170
+#define leftBWD 180
+#define rightBWD 0
+#define baseSpeedLeft 50
+#define baseSpeedRight 120
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
@@ -132,20 +132,16 @@ void setup(){
 	grabberServo.attach(grabberServoPin);
 
 	Serial1.begin(115200);
-	pinMode(buttonIntPin, INPUT_PULLUP);
-	attachInterrupt(0, resetISR, CHANGE);
-	pinMode(lineSenseRight, INPUT);
-	pinMode(lineSenseLeft, INPUT);
-	pinMode(lineSenseCenter, INPUT);
-	pinMode(lineSenseFarLeft, INPUT);
+	//pinMode(buttonIntPin, INPUT_PULLUP);
+	//attachInterrupt(0, resetISR, CHANGE);
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	pinMode(encoderLeft, INPUT);
-	attachInterrupt(4, encoderLeftISR, RISING);
+	//attachInterrupt(4, encoderLeftISR, RISING);
 	pinMode(encoderRight, INPUT);
-	attachInterrupt(3, encoderRightISR, RISING);
+	//attachInterrupt(3, encoderRightISR, RISING);
 
-	state = start;
+	state = TESTING;
 	armStatus = DOWN;
 
 	reactor = 'A'; //reactor type
@@ -159,21 +155,22 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
+	forward();
 	//insert test code here
 }
 
 //when the button is pushed, stop or resume robot operation
-void resetISR()
-{
-	if(state == start)
-	{
-		state = TESTING;
-	} 
-	else
-	{
-		state = idle;
-	}
-}
+// void resetISR()
+// {
+// 	if(state == start)
+// 	{
+// 		state = TESTING;
+// 	} 
+// 	else
+// 	{
+// 		//state = idle;
+// 	}
+// }
 
 void loop(){
 	byte *myDataPointer = &myData;
@@ -191,11 +188,12 @@ void loop(){
 }
 //master state machine
  void stateMachine(){
-// while(state != idle)
-// {
-// 	switch (state) {
-// 		case TESTING:
-// 			runTest();
+	while(state != idle)
+ {
+	switch (state) {
+		case TESTING:
+			runTest();
+			break;
 // 		case findStart: 
 // 			followLine();
 // 			turnRight90(); //make this
@@ -259,11 +257,11 @@ void loop(){
 // 	    	releaseGrab();
 // 	    	rackReverse();
 // 	    	break;
-// 	    case idle:
-// 	    	stop();
-// 	    	break;
-// 	}
-// }
+	    case idle:
+	    	stop();
+	    	break;
+	}
+	 }
  }
 
 //returns boolean if a certain amount of lines have been hit
