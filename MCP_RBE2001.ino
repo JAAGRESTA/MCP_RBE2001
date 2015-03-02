@@ -2,6 +2,8 @@
 #include <TimerOne.h>
 #include <BluetoothClient.h>
 #include <BluetoothMaster.h>
+#include "ReactorProtocol.h"
+
 //all pins are temporary and need changing
 #define leftDrivePin 26
 #define rightDrivePin 27
@@ -690,32 +692,56 @@ void turnLeft90()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
+	forward();
+	if(encoderLeftCount >= forwardThreshold)
 	{
-		forward();
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
 	}
-	encoderRightCount = 0;
-	encoderLeftCount = 0;
-	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
+	if(encoderRightCount >= forwardThreshold)
 	{
-		leftDrive.write(leftBWD);
-		rightDrive.write(rightFWD);
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
+	}
+	turnLeft();
+
+	if(encoderLeftCount >= turn90Threshold)
+	{
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
+	}
+	if(encoderRightCount >= turn90Threshold)
+	{
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
 	}
 }
 void turnRight90()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
+	forward();
+	if(encoderLeftCount >= forwardThreshold)
 	{
-		forward();
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
 	}
-	encoderRightCount = 0;
-	encoderLeftCount = 0;
-	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
+	if(encoderRightCount >= forwardThreshold)
 	{
-		leftDrive.write(leftFWD);
-		rightDrive.write(rightBWD);
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
+	}
+	turnRight();
+
+	if(encoderLeftCount >= turn90Threshold)
+	{
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
+	}
+	if(encoderRightCount >= turn90Threshold)
+	{
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
 	}
 }
 void turn180()
@@ -741,4 +767,14 @@ void encoderLeftISR()
 void encoderRightISR()
 {
 	encoderRightCount++;
+}
+void turnLeft()
+{
+	leftDrive.write(leftBWD);
+	rightDrive.write(rightFWD);
+}
+void turnRight()
+{
+	leftDrive.write(leftFWD);
+	rightDrive.write(rightBWD);
 }
