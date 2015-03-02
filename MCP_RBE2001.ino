@@ -49,7 +49,7 @@
 #define stopID 0x04
 #define resumeID 0x05
 #define statusID 0x06
-#define heartBeatID 0x07
+#define heartbeatID 0x07
 #define fieldID 0x00
 #define teamID 0x0A
 #define newRodID 0x2C
@@ -206,6 +206,42 @@ void parseData(byte *data, byte type) {
 		case 7:
 			break;
 	}
+}
+void sendHeartBeat() {
+	sendMessage(0x00, heartbeatID);
+}
+void sendRadAlert(byte *alertType) {
+	sendMessage(alertType, radID);
+}
+void sendStatus(byte *movementStatus, byte *gripperStatus, byte *operationStatus) {
+	byte *dataFinal[3];
+	byte *packetFinal[9];
+	dataFinal[0] = movementStatus;
+	dataFinal[1] = gripperStatus;
+	dataFinal[2] = operationStatus;
+	myRobot.createPkt(statusID, dataFinal[0], packetFinal[0]);
+	myMaster.sendPkt(packetFinal[0], 9);
+}
+void sendMessage(byte *data, byte dataType) {
+	byte *dataFinal;
+	byte *packetFinalRad[7];
+	byte *packetFinalHeartbeat[6];
+	switch(dataType) {
+		case 3: //radID
+			dataFinal = data;
+			myRobot.createPkt(radID, dataFinal, packetFinalRad[0]);
+			myMaster.sendPkt(packetFinalRad[0], 7);
+		case 7: //hearbeatID
+			myRobot.createPkt(heartbeatID, 0x00, packetFinalHeartbeat[0]);
+			myMaster.sendPkt(packetFinalHeartbeat[0], 6);
+	}
+	myMaster.sendPkt(dataFinal, 6);
+}
+void stopRobot() {
+	//HOW STOP ROBIT?
+}
+void resumeRobot() {
+	//IS ALSO NOT KNOW START ROBIT
 }
 void parseNewTubes(byte mask, byte ID) {
 	byte comparator = 0x01;
