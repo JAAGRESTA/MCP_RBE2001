@@ -748,16 +748,28 @@ void turn180()
 {
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	while((encoderLeftCount < backwardThreshold) && (encoderRightCount < backwardThreshold))
+	backward();
+	if(encoderLeftCount >= backwardThreshold)
 	{
-		backward();
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
 	}
-	encoderRightCount = 0;
-	encoderLeftCount = 0;
-	while((encoderLeftCount < turn180Threshold) && (encoderRightCount < turn180Threshold))
+	if(encoderRightCount >= backwardThreshold)
 	{
-		leftDrive.write(leftBWD);
-		rightDrive.write(rightFWD);
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
+	}
+	turnRight();
+
+	if(encoderLeftCount >= turn180Threshold)
+	{
+		leftDrive.write(stopSpeed);
+		encoderLeftCount = 0;
+	}
+	if(encoderRightCount >= turn180Threshold)
+	{
+		rightDrive.write(stopSpeed);
+		encoderRightCount = 0;
 	}
 }
 void encoderLeftISR()
