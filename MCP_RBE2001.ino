@@ -33,7 +33,7 @@
 #define grabberOpen 0
 #define rackMoveTime 50
 #define upPosition 90 
-#define downPosition 0
+#define downPosition 180
 
 #define lengthPos 1
 #define typePos 2
@@ -67,7 +67,7 @@ float leftSpeed, rightSpeed, speedGain = 0.55;
 int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed, pGain= 0.5, iGain=0, dGain=0;
+float adjustedSpeed = 90, pGain= 0.5, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
@@ -135,6 +135,7 @@ void setup(){
 	grabberServo.attach(grabberServoPin);
 
 	Serial1.begin(115200);
+	Serial.begin(9600);
 	pinMode(buttonIntPin, INPUT_PULLUP);
 	attachInterrupt(0, resetISR, RISING);
 	pinMode(potPin, INPUT);
@@ -158,8 +159,8 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	setArmAngle(70);
-	
+	setArmAngle(downPosition);
+	//setArmAngle(downPosition);
 	//insert test code here
 }
 
@@ -477,12 +478,12 @@ int getPotAngle()
 //pot is BACKWARD!
 void setArmAngle(int desiredAngle)
 {
-		prevAngleError = angleError; 
 		angleError = desiredAngle - getPotAngle();
-		deltaAngleError = prevAngleError - angleError;
-		sumAngleError = angleError + prevAngleError;
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		fourBarMotor.write(90 + adjustedSpeed);
+		prevAngleError = angleError;
+		deltaAngleError = prevAngleError - angleError;
+		sumAngleError = angleError + prevAngleError;
 }
 
 //closes claw
@@ -497,21 +498,21 @@ void releaseGrab()
 	grabberServo.write(grabberOpen);
 }
 
-//moves rack and pinion system to forward position, stops
-void rackForward()
-{
-	rackMotor.write(150);
-	delay(rackMoveTime);
-	rackMotor.write(90);
-}
+// //moves rack and pinion system to forward position, stops
+// void rackForward()
+// {
+// 	rackMotor.write(150);
+// 	delay(rackMoveTime);
+// 	rackMotor.write(90);
+// }
 
-//moves rack and pinion system to backward position, stops
-void rackReverse()
-{
-	rackMotor.write(30);
-	delay(rackMoveTime);
-	rackMotor.write(90);
-}
+// //moves rack and pinion system to backward position, stops
+// void rackReverse()
+// {
+// 	rackMotor.write(30);
+// 	delay(rackMoveTime);
+// 	rackMotor.write(90);
+// }
 
 //allows us to approach the reactor until limit switch hit
 //written the same as followLine method
