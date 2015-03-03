@@ -16,19 +16,19 @@
 #define lineSenseCenter A3
 #define lineSenseFarLeft A4
 #define potPin A5
-#define encoderRight 20
-#define encoderLeft 19 
+#define encoderRight 19
+#define encoderLeft 3 
 #define buttonIntPin 2
 #define flipperPin 5
 
 #define stopSpeed 90
 #define potRange 180
-#define leftFWD 20
-#define rightFWD 130
-#define leftBWD 130
-#define rightBWD 20
-#define baseSpeedLeft 20
-#define baseSpeedRight 130
+#define leftFWD 70
+#define rightFWD 110
+#define leftBWD 110
+#define rightBWD 70
+#define baseSpeedLeft 70
+#define baseSpeedRight 110
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
@@ -67,12 +67,12 @@ float leftSpeed, rightSpeed, speedGain = 0.55;
 int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed, pGain, iGain, dGain;
+float adjustedSpeed, pGain= 0.5, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
-int encoderLeftCount = 0, encoderRightCount = 0;
-float turn90Threshold = 123, turn180Threshold = 246, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
+int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
+float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 
 
 bool isReceivingData = false;
@@ -98,7 +98,7 @@ enum armState{ //needs use
 };
 
 enum State{
-	start,
+	Start,
 	TESTING,
 	findStart,
 	findReactorB,
@@ -135,16 +135,16 @@ void setup(){
 	grabberServo.attach(grabberServoPin);
 
 	Serial1.begin(115200);
-	//pinMode(buttonIntPin, INPUT_PULLUP);
-	//attachInterrupt(0, resetISR, CHANGE);
+	pinMode(buttonIntPin, INPUT_PULLUP);
+	attachInterrupt(0, resetISR, RISING);
 	pinMode(potPin, INPUT);
 	pinMode(limitPin, INPUT);
 	pinMode(encoderLeft, INPUT);
-	attachInterrupt(4, encoderLeftISR, RISING);
+	attachInterrupt(1, encoderLeftISR, RISING);
 	pinMode(encoderRight, INPUT);
-	attachInterrupt(3, encoderRightISR, RISING);
+	attachInterrupt(4, encoderRightISR, RISING);
 
-	state = TESTING;
+	state = Start;
 	armStatus = DOWN;
 
 	reactor = 'A'; //reactor type
@@ -158,112 +158,115 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	turnLeft90();
-	turnRight90();
+	setArmAngle(70);
+	
 	//insert test code here
 }
 
 //when the button is pushed, stop or resume robot operation
-// void resetISR()
-// {
-// 	if(state == start)
-// 	{
-// 		state = TESTING;
-// 	} 
-// 	else
-// 	{
-// 		//state = idle;
-// 	}
-// }
+void resetISR()
+{
+	if(state == Start)
+	{
+		state = TESTING;
+	} 
+	else
+	{
+		state = Start;//state = idle;
+	}
+}
 
 void loop(){
-	if(myMaster.readPacket(myData[0])) {
-		if(myRobot.getData(myData[0], data[0], type)) {
-			parseData(data[0], type);
-		}
-	}
- 	stateMachine();
+	stateMachine();
+	// if(myMaster.readPacket(myData[0])) {
+	// 	if(myRobot.getData(myData[0], data[0], type)) {
+	// 		parseData(data[0], type);
+	// 	}
+	// }
+ 	
 
 }
-void parseData(byte *data, byte type) {
-	switch(type) {
-		case 1:
-			parseNewTubes(data[0], 0x01);
-			break;
-		case 2:
-			parseNewTubes(data[0], 0x02);
-			break;
-		case 3:
-			break;
-		case 4:
-			stopRobot();
-			break;
-		case 5:
-			resumeRobot();
-			break;
-		case 6:
-			break;
-		case 7:
-			break;
-	}
-}
-void sendHeartBeat() {
-	sendMessage(0x00, heartbeatID);
-}
-void sendRadAlert(byte *alertType) {
-	sendMessage(alertType, radID);
-}
-void sendStatus(byte *movementStatus, byte *gripperStatus, byte *operationStatus) {
-	byte *dataFinal[3];
-	byte *packetFinal[9];
-	dataFinal[0] = movementStatus;
-	dataFinal[1] = gripperStatus;
-	dataFinal[2] = operationStatus;
-	myRobot.createPkt(statusID, dataFinal[0], packetFinal[0]);
-	myMaster.sendPkt(packetFinal[0], 9);
-}
-void sendMessage(byte *data, byte dataType) {
-	byte *dataFinal;
-	byte *packetFinalRad[7];
-	byte *packetFinalHeartbeat[6];
-	switch(dataType) {
-		case 3: //radID
-			dataFinal = data;
-			myRobot.createPkt(radID, dataFinal, packetFinalRad[0]);
-			myMaster.sendPkt(packetFinalRad[0], 7);
-		case 7: //hearbeatID
-			myRobot.createPkt(heartbeatID, 0x00, packetFinalHeartbeat[0]);
-			myMaster.sendPkt(packetFinalHeartbeat[0], 6);
-	}
-	myMaster.sendPkt(dataFinal, 6);
-}
-void stopRobot() {
-	//HOW STOP ROBIT?
-}
-void resumeRobot() {
-	//IS ALSO NOT KNOW START ROBIT
-}
-void parseNewTubes(byte mask, byte ID) {
-	byte comparator = 0x01;
-	switch(ID) {
-		case 1:
-			for(int i=0; i<4; i++) {
-				storageTubes[i] = ((mask & comparator) == comparator);
-				comparator << 1;
-			}
-			break;
-		case 2:
-			for(int i=0; i<4; i++) {
-				supplyTubes[i] = ((mask & comparator) == comparator);
-				comparator << 1;
-			}
-	}
-}
+// void parseData(byte *data, byte type) {
+// 	switch(type) {
+// 		case 1:
+// 			parseNewTubes(data[0], 0x01);
+// 			break;
+// 		case 2:
+// 			parseNewTubes(data[0], 0x02);
+// 			break;
+// 		case 3:
+// 			break;
+// 		case 4:
+// 			stopRobot();
+// 			break;
+// 		case 5:
+// 			resumeRobot();
+// 			break;
+// 		case 6:
+// 			break;
+// 		case 7:
+// 			break;
+// 	}
+// }
+// void sendHeartBeat() {
+// 	sendMessage(0x00, heartbeatID);
+// }
+// void sendRadAlert(byte *alertType) {
+// 	sendMessage(alertType, radID);
+// }
+// void sendStatus(byte *movementStatus, byte *gripperStatus, byte *operationStatus) {
+// 	byte *dataFinal[3];
+// 	byte *packetFinal[9];
+// 	dataFinal[0] = movementStatus;
+// 	dataFinal[1] = gripperStatus;
+// 	dataFinal[2] = operationStatus;
+// 	myRobot.createPkt(statusID, dataFinal[0], packetFinal[0]);
+// 	myMaster.sendPkt(packetFinal[0], 9);
+// }
+// void sendMessage(byte *data, byte dataType) {
+// 	byte *dataFinal;
+// 	byte *packetFinalRad[7];
+// 	byte *packetFinalHeartbeat[6];
+// 	switch(dataType) {
+// 		case 3: //radID
+// 			dataFinal = data;
+// 			myRobot.createPkt(radID, dataFinal, packetFinalRad[0]);
+// 			myMaster.sendPkt(packetFinalRad[0], 7);
+// 		case 7: //hearbeatID
+// 			myRobot.createPkt(heartbeatID, 0x00, packetFinalHeartbeat[0]);
+// 			myMaster.sendPkt(packetFinalHeartbeat[0], 6);
+// 	}
+// 	myMaster.sendPkt(dataFinal, 6);
+// }
+// void stopRobot() {
+// 	//HOW STOP ROBIT?
+// }
+// void resumeRobot() {
+// 	//IS ALSO NOT KNOW START ROBIT
+// }
+// void parseNewTubes(byte mask, byte ID) {
+// 	byte comparator = 0x01;
+// 	switch(ID) {
+// 		case 1:
+// 			for(int i=0; i<4; i++) {
+// 				storageTubes[i] = ((mask & comparator) == comparator);
+// 				comparator << 1;
+// 			}
+// 			break;
+// 		case 2:
+// 			for(int i=0; i<4; i++) {
+// 				supplyTubes[i] = ((mask & comparator) == comparator);
+// 				comparator << 1;
+// 			}
+// 	}
+// }
 //master state machine
  void stateMachine(){
-	while(state != idle)
- {
+	
 	switch (state) {
+		case Start:
+			stop(); 
+			break;
 		case TESTING:
 			runTest();
 			break;
@@ -334,7 +337,7 @@ void parseNewTubes(byte mask, byte ID) {
 	    	stop();
 	    	break;
 	}
-	 }
+	
  }
 
 //returns boolean if a certain amount of lines have been hit
@@ -371,12 +374,12 @@ void stop()
 
  void HundredMsISR() 
  {
- 	heartBeatCounter++;
- 	if(heartBeatCounter == 5) //every .5 seconds
- 	{
- 		sendHeartBeat();
- 		heartBeatCounter = 0;
- 	}
+ 	// heartBeatCounter++;
+ 	// if(heartBeatCounter == 5) //every .5 seconds
+ 	// {
+ 	// 	sendHeartBeat();
+ 	// 	heartBeatCounter = 0;
+ 	// }
  }
 
 // //method to do line tracking until the robot drives over a line
@@ -466,10 +469,12 @@ boolean reactorHit()
 int getPotAngle()
 {
 	potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
+	
 	return potAngle;
 }
 
-//sets four-bar to a given desired angle with PID control
+//sets four-bar to a given desired angle with PID control 
+//pot is BACKWARD!
 void setArmAngle(int desiredAngle)
 {
 		prevAngleError = angleError; 
@@ -726,87 +731,63 @@ boolean supplyFull(int x)
 }
 void turnLeft90()
 {
-	encoderRightCount = 0;
-	encoderLeftCount = 0;
-	forward();
-	if(encoderLeftCount >= forwardThreshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= forwardThreshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
-	turnLeft();
+	
+	forwardToThreshold();
+	turnLeftToThreshold();
+	// forward();
+	// if(encoderLeftCount >= forwardThreshold)
+	// {
+	// 	leftDrive.write(stopSpeed);
+	// 	encoderLeftCount = 0;
+	// }
+	// if(encoderRightCount >= forwardThreshold)
+	// {
+	// 	rightDrive.write(stopSpeed);
+	// 	encoderRightCount = 0;
+	// }
+	// turnLeft();
 
-	if(encoderLeftCount >= turn90Threshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= turn90Threshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
+	// if(encoderLeftCount >= turn90Threshold)
+	// {
+	// 	leftDrive.write(stopSpeed);
+	// 	encoderLeftCount = 0;
+	// }
+	// if(encoderRightCount >= turn90Threshold)
+	// {
+	// 	rightDrive.write(stopSpeed);
+	// 	encoderRightCount = 0;
+	// }
 }
 void turnRight90()
 {
-	encoderRightCount = 0;
-	encoderLeftCount = 0;
-	forward();
-	if(encoderLeftCount >= forwardThreshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= forwardThreshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
-	turnRight();
-
-	if(encoderLeftCount >= turn90Threshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= turn90Threshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
+	forwardToThreshold();
+	turnRightToThreshold();
 }
 void turn180()
 {
+
+	backwardToThreshold();
+	while((encoderLeftCount < turn180Threshold) && (encoderRightCount < turn180Threshold))
+	{
+		if(encoderLeftCount >= turn180Threshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftBWD);
+		}
+		if(encoderRightCount >= turn180Threshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightFWD);
+		}
+	}
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
-	backward();
-	if(encoderLeftCount >= backwardThreshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= backwardThreshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
-	turnRight();
-
-	if(encoderLeftCount >= turn180Threshold)
-	{
-		leftDrive.write(stopSpeed);
-		encoderLeftCount = 0;
-	}
-	if(encoderRightCount >= turn180Threshold)
-	{
-		rightDrive.write(stopSpeed);
-		encoderRightCount = 0;
-	}
 }
 void encoderLeftISR()
 {
@@ -816,13 +797,102 @@ void encoderRightISR()
 {
 	encoderRightCount++;
 }
-void turnLeft()
+//pls work
+void turnLeftToThreshold()
 {
-	leftDrive.write(leftBWD);
-	rightDrive.write(rightFWD);
+	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
+	{
+		if(encoderLeftCount >= turn90Threshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftBWD);
+		}
+		if(encoderRightCount >= turn90Threshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightFWD);
+		}
+	}
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
 }
-void turnRight()
+void turnRightToThreshold()
 {
-	leftDrive.write(leftFWD);
-	rightDrive.write(rightBWD);
+	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
+	{
+		if(encoderLeftCount >= turn90Threshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftFWD);
+		}
+		if(encoderRightCount >= turn90Threshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightBWD);
+		}
+	}
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+}
+//pretty pls
+void forwardToThreshold()
+{
+	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
+	{
+		if(encoderLeftCount >= forwardThreshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftFWD);
+		}
+		if(encoderRightCount >= forwardThreshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightFWD);
+		}
+	}
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
+	
+}
+void backwardToThreshold()
+{
+	while( (encoderLeftCount < backwardThreshold) && (encoderRightCount < backwardThreshold))
+	{
+		if(encoderLeftCount >= forwardThreshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftBWD);
+		}
+		if(encoderRightCount >= forwardThreshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightBWD);
+		}
+	}
+	encoderRightCount = 0;
+	encoderLeftCount = 0;
 }
