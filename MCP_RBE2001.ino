@@ -169,11 +169,16 @@ void runTest()
 
 	// Serial.print(analogRead(lineSenseLeft));
 	// Serial.print(", ");
-	// Serial.println(analogRead(lineSenseRight));
+	// Serial.print(analogRead(lineSenseRight));
+	// Serial.print(", ");
+	// getError();
+	// Serial.println(error);
+
 	// Serial.println(y);
 	//Serial.println(analogRead(potPin));
 	
-	//setArmAngle(upPosition);
+	//Serial.println(error);
+	//Serial.println(analogRead(lineSenseLeft));
 	//Serial.println(getPotVal());
 	//setArmAngle(downPosition);
 	//insert test code here
@@ -217,9 +222,7 @@ void loop(){
 			runTest();
 			break;
 		case findStart: 
-			followLine();
-			turnRight90(); //make this
-			followLine();
+			goXlines(3);
 			approachReactor();
 			state = grabSpent;
 	    case findReactor: 
@@ -330,6 +333,7 @@ void stop()
 	rightDrive.write(stopSpeed);
 }
 
+//uses timer one to count 20ms intervals, useful for encoders
  void TwentyMsISR() 
  {
  	// heartBeatCounter++;
@@ -375,7 +379,7 @@ void getError()
 //returns true if a cross is hit, false otherwise 
 boolean crossHit() 
 {
-	if(overLine(lineSenseFarLeft) && (overLine(lineSenseRight) || overLine(lineSenseLeft) || overLine(lineSenseCenter))) 
+	if(overLine(lineSenseFarLeft) && (overLine(lineSenseRight) || overLine(lineSenseLeft))) 
   	{
   		lineCount++;
   		return true;
