@@ -73,7 +73,7 @@ int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
 float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
-
+int 100msFlag = 0, 20msCounter = 0;
 
 bool isReceivingData = false;
 byte *myData[10];
@@ -150,8 +150,8 @@ void setup(){
 	lineCount = 0; //counts the amount of lines
 	lineFlag = 0; //flag for when line detected 
 
-	Timer1.initialize(100000);
-	Timer1.attachInterrupt(HundredMsISR);
+	Timer1.initialize(20000);
+	Timer1.attachInterrupt(TwentyMsISR);
 }
 
 //method to test stand-alone modules of code for individual testing
@@ -374,13 +374,19 @@ void stop()
 	rightDrive.write(stopSpeed);
 }
 
- void HundredMsISR() 
+ void TwentyMsISR() 
  {
  	// heartBeatCounter++;
  	// if((heartBeatCounter % 5) == 0) //every .5 seconds
  	// {
  	// 	sendHeartBeat();
  	// }
+ 	20msCounter++;
+ 	if(20msCounter == 5)
+ 	{
+ 		100msFlag = 1;
+ 		20msCounter = 0;
+ 	}
  }
 
 // //method to do line tracking until the robot drives over a line
@@ -521,13 +527,15 @@ void releaseGrab()
 //optional slowing approach commented out
 void approachReactor()
 {
-
-	getError();
-	leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
-	rightSpeed = baseSpeedRight + ((float) error*speedGain); // -(slowTime * slowTimeGain);
-	leftDrive.write(leftSpeed);
-	rightDrive.write(leftSpeed);
-	delay(100);
+	100msFlag = 0;
+	while(100msFlag != 1)
+	{
+		getError();
+		leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
+		rightSpeed = baseSpeedRight + ((float) error*speedGain); // -(slowTime * slowTimeGain);
+		leftDrive.write(leftSpeed);
+		rightDrive.write(leftSpeed);
+	}
 	
 	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
 	{
