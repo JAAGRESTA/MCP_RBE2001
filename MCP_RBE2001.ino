@@ -20,6 +20,7 @@
 #define encoderLeft 3 
 #define buttonIntPin 2
 #define flipperPin 5
+#define radLED 27
 
 #define stopSpeed 90
 #define potRange 180
@@ -73,7 +74,8 @@ int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
 float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
-int 100msFlag = 0, 20msCounter = 0;
+int hundredMsFlag = 0, twentyMsCounter = 0;
+int radFlag = 0;
 
 bool isReceivingData = false;
 byte *myData[10];
@@ -137,6 +139,7 @@ void setup(){
 	pinMode(buttonIntPin, INPUT_PULLUP);
 	attachInterrupt(0, resetISR, RISING);
 	pinMode(potPin, INPUT);
+	pinMode(radLED, OUTPUT);
 	pinMode(limitPin, INPUT);
 	pinMode(encoderLeft, INPUT);
 	attachInterrupt(1, encoderLeftISR, RISING);
@@ -179,6 +182,10 @@ void resetISR()
 }
 
 void loop(){
+	if(radFlag != 0)
+	{
+		digitalWrite(radLED, HIGH);
+	}
 	stateMachine();
 	// if(myMaster.readPacket(myData[0])) {
 	// 	if(myRobot.getData(myData[0], data[0], type)) {
@@ -300,6 +307,7 @@ void loop(){
 	      grab();
 	      flipMeUp();
 	      setArmAngle(upPosition);
+	      radFlag = 1; //carrying spent rod => spents radiation
 	      state = findDisposal;
 	      break;
 	    case findDisposal:
@@ -308,6 +316,7 @@ void loop(){
 	   		break;
 	    case placeSpent:
 	    	releaseGrab();
+	    	radFlag = 0; // no rod => no radiation
 	    	state = findSupply;
 	    	break;
 	    case findSupply:
@@ -316,6 +325,7 @@ void loop(){
 	    	break;
 	    case grabSupply:
 	    	grab();
+	    	radFlag = 2; //carrying supply rod => full radiation
 	    	state = returnToReactor;
 	    	break;
 	    case returnToReactor:
@@ -333,6 +343,7 @@ void loop(){
 	    	flipMeDown();
 	    	setArmAngle(downPosition);
 	    	releaseGrab();
+	    	radFlag = 0; //no rod => no radiation
 	    	state = findReactor;
 	    	break;
 	    case idle:
@@ -381,11 +392,11 @@ void stop()
  	// {
  	// 	sendHeartBeat();
  	// }
- 	20msCounter++;
- 	if(20msCounter == 5)
+ 	twentyMsCounter++;
+ 	if(twentyMsCounter == 25)
  	{
- 		100msFlag = 1;
- 		20msCounter = 0;
+ 		hundredMsFlag = 1;
+ 		twentyMsCounter = 0;
  	}
  }
 
@@ -527,8 +538,8 @@ void releaseGrab()
 //optional slowing approach commented out
 void approachReactor()
 {
-	100msFlag = 0;
-	while(100msFlag != 1)
+	hundredMsFlag = 0;
+	while(hundredMsFlag != 1)
 	{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
@@ -764,7 +775,7 @@ boolean supplyFull(int x)
 	i = x-1;
 	byte mask = 0x01;
 	mask << i;
-	return (mask & supplyTubes == mask);
+	return (mask & supplyTubes[i] == mask);
 }
 void turnLeft90()
 {
