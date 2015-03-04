@@ -288,13 +288,20 @@ void loop(){
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
+	if(overLine(lineSenseFarLeft) && (!lineFlag))
+	{
+		lineCount++;
+		lineFlag = 1;
+	
+	}else if(!(overLine(lineSenseFarLeft)))
+	{
+		lineFlag = 0;
+	}
 	if(lineCount == x)
 	{
-		lineCount = 0;
 		return true;
 	}else
 	{
-		lineCount = 0;
 		return false;
 	}
 }
@@ -357,7 +364,7 @@ void followLine()
 
 void goXlines(int lineNum)
 {
-	while(lineCount != lineNum)
+	while(!lineHit(lineNum))
 	{
 		followLine();
 	}
