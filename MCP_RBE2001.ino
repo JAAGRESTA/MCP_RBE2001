@@ -32,8 +32,8 @@
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
-#define upPosition 90 
-#define downPosition 180
+#define upPosition 150 
+#define downPosition 140
 
 #define lengthPos 1
 #define typePos 2
@@ -67,7 +67,7 @@ float leftSpeed, rightSpeed, speedGain = 0.55;
 int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed = 90, pGain= 2, iGain=0, dGain=0;
+float adjustedSpeed = 90, pGain= 10, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
@@ -159,7 +159,10 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	setArmAngle(803);
+	int x;
+	x = getPotAngle();
+	Serial.println(x);
+	setArmAngle(150);
 	//setArmAngle(downPosition);
 	//insert test code here
 }
@@ -469,8 +472,8 @@ boolean reactorHit()
 //returns the potentiometer angle value in degrees
 int getPotAngle()
 {
-	//potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
-	potAngle = analogRead(potPin);
+	potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
+	//potAngle = analogRead(potPin);
 	return potAngle;
 }
 
@@ -480,9 +483,9 @@ void setArmAngle(int desiredAngle)
 {
 		angleError = desiredAngle - getPotAngle();
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
-		Serial.println("Motor Speed :");
-		Serial.print(90 + adjustedSpeed);
-		fourBarMotor.write(90 + adjustedSpeed);
+		Serial.print("Motor Speed :");
+		Serial.println(90 - adjustedSpeed);
+		fourBarMotor.write(90 - adjustedSpeed);
 		prevAngleError = angleError;
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
