@@ -69,8 +69,8 @@ int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed = 90, pGain= 10, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
-int XYcoords[2] = {0,1};
-int currentXYcoords[2] = {0,1};
+int XYcoords[2] = {5,1};
+int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
 float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 
@@ -89,7 +89,7 @@ BluetoothMaster myMaster;
 Servo leftDrive;
 Servo rightDrive;
 Servo fourBarMotor;
-Servo rackMotor;
+Servo flipperMotor;
 Servo grabberServo;
 
 enum armState{ //needs use
@@ -101,16 +101,14 @@ enum State{
 	Start,
 	TESTING,
 	findStart,
-	findReactorB,
+	findReactor,
 	grabSpent,
 	findDisposal,
 	placeSpent,
 	findSupply,
 	grabSupply,
-	returnToReactorB,
+	returnToReactor,
 	placeSupply, 
-	findReactorA,
-	returnToReactorA,
 	idle
 };
 
@@ -131,7 +129,7 @@ void setup(){
 	leftDrive.attach(leftDrivePin,1000,2000);
 	rightDrive.attach(rightDrivePin,1000,2000);
 	fourBarMotor.attach(fourBarPin,1000,2000);
-	rackMotor.attach(rackMotorPin,1000,2000);
+	flipperMotor.attach(flipperPin);
 	grabberServo.attach(grabberServoPin);
 
 	Serial1.begin(115200);
@@ -274,69 +272,69 @@ void loop(){
 		case TESTING:
 			runTest();
 			break;
-// 		case findStart: 
-// 			followLine();
-// 			turnRight90(); //make this
-// 			followLine();
-// 			approachReactor();
-// 			state = grabSpent;
-// 	    case findReactorA: 
-// 	      if(reactor == 'A') //for reactor A
-// 	      { 
-// 	      	goXlines(1); //depends where we start	
-// 	      	approachReactor(); //works because while loop wont end till limit hit
-// 	      	state = grabSpent;	
-// 	      }
-// 	      if(reactor == 'B') //for reactor B
-// 	      { 
-// 	      	goXlines(4); //depends where we start	
-// 	      	approachReactor(); //works because while loop wont end till limit hit
-// 	      	state = grabSpent;	
-// 	      }
+		case findStart: 
+			followLine();
+			turnRight90(); //make this
+			followLine();
+			approachReactor();
+			state = grabSpent;
+	    case findReactor: 
+	      if(reactor == 'A') //for reactor A
+	      { 
+	      	navigateToReactorCoord();
+	      	state = grabSpent;	
+	      }
+	      if(reactor == 'B') //for reactor B
+	      { 
+	      	XYcoords[0] = 0;
+	      	XYcoords[1] = 1;
+	      	navigateToReactorCoord();
+	      	state = grabSpent;	
+	      }
 
-// 	      break;
-// 	    case grabSpent:
-// 	   	  rackReverse();
-// 	      releaseGrab();
-// 	      setArmAngle(downPosition);
-// 	      rackForward();
-// 	      grab();
-// 	      rackReverse();
-// 	      state = findDisposal;
-// 	      break;
-// 	    case findDisposal:
-// 	   	  	//stuff
-// 	   		break;
-// 	    case placeSpent:
-// 	    	rackReverse();
-// 	    	setArmAngle(upPosition);
-// 	    	rackForward();
-// 	    	releaseGrab();
-// 	    	rackReverse();
-// 	    	setArmAngle(downPosition);
-// 	    	state = findSupply;
-// 	    	break;
-// 	    case findSupply:
-// 	    	//stuff
-// 	    	break;
-// 	    case grabSupply:
-// 	    	rackReverse();
-// 	    	setArmAngle(upPosition);
-// 	    	releaseGrab();
-// 	    	rackForward();
-// 	    	grab();
-// 	    	rackReverse();
-// 	    	break;
-// 	    case returnToReactor:
-// 	    	//stuff
-// 	    	break;
-// 	    case placeSupply:
-// 	    	rackReverse();
-// 	    	setArmAngle(downPosition);
-// 	    	rackForward();
-// 	    	releaseGrab();
-// 	    	rackReverse();
-// 	    	break;
+	      break;
+	    case grabSpent:
+	   	  flipMeDown();
+	      releaseGrab();
+	      setArmAngle(downPosition);
+	      grab();
+	      flipMeUp();
+	      setArmAngle(upPosition);
+	      state = findDisposal;
+	      break;
+	    case findDisposal:
+	   	  	navigateToDisposal();
+	   	  	state = placeSpent;
+	   		break;
+	    case placeSpent:
+	    	releaseGrab();
+	    	state = findSupply;
+	    	break;
+	    case findSupply:
+	    	navigateToSupply();
+	    	state = grabSupply;
+	    	break;
+	    case grabSupply:
+	    	grab();
+	    	state = returnToReactor;
+	    	break;
+	    case returnToReactor:
+	    	navigateToReactorCoord();
+	    	if(reactor = 'A')
+	    	{
+	    		reactor = 'B';
+	    	}else
+	    	{
+	    		reactor = 'A';
+	    	}
+	    	state = placeSupply;
+	    	break;
+	    case placeSupply:
+	    	flipMeDown();
+	    	setArmAngle(downPosition);
+	    	releaseGrab();
+	    	state = findReactor;
+	    	break;
 	    case idle:
 	    	stop();
 	    	break;
@@ -901,4 +899,12 @@ void backwardToThreshold()
 	}
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
+}
+void flipMeUp()
+{
+	flipperMotor.write(180);
+}
+void flipMeDown()
+{
+	flipperMotor.write(0);
 }
