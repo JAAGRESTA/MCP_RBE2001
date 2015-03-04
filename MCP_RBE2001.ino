@@ -30,8 +30,8 @@
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
-#define upPosition 454  
-#define downPosition 400
+#define upPosition 448  
+#define downPosition 392
 #define flipperUp 0
 #define flipperDown 180
 
@@ -63,7 +63,7 @@ int lineCount;
 int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = light
 float error;
-float leftSpeed = 70, rightSpeed = 110, speedGain = 0.017, speedDgain = 0.060, prevSpeedError = 0, deltaSpeedError = 0; 
+float leftSpeed = 70, rightSpeed = 110, speedGain = 0.019, speedDgain = 0.061, prevSpeedError = 0, deltaSpeedError = 0; 
 unsigned long int heartBeatCounter = 0;
 float potVal;
 float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
@@ -71,7 +71,7 @@ float adjustedSpeed = 90, pGain= 450, iGain=50, dGain=100;
 int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
-float turn90Threshold = 90, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
+float turn90Threshold = 90, turn180Threshold = 200, forwardThreshold = 38, backwardThreshold = 70.35; //turn needs tuning or calculating
 int hundredMsFlag = 0, twentyMsCounter = 0;
 int radFlag = 0;
 int baseSpeedLeft = 72;
@@ -181,10 +181,48 @@ void runTest()
 	//Serial.println(getPotVal());
 	//setArmAngle(downPosition);
 	//insert test code here
+
+
+	goXlines(3);
+	lineUp();
+	stop();
+	delay(400);
+	approachReactor();
+	stop();
+	delay(400);
+	flipMeDown();
+	releaseGrab();
+	delay(400);
+	stopArm();
+	grab();
+	delay(400);
+	setArmAngle(upPosition);
+	turn180();
+	stopArm();
+	goXlines(1);
+	lineUp();
+	turnLeft90();
+	goXlines(1);
+	lineUp();
+	stop();
+	delay(400);
+	setArmAngle(upPosition);
+	flipMeUp();
+	delay(400);
+	approachReactor();
+	stop();
+	delay(400);
+	releaseGrab();
+	turn180();
+	stopArm();
+	delay(400); 
+	flipMeDown();
+	delay(400); 
 	goXlines(1);
 	stop();
-	delay(1000);
-	turnLeft90();
+
+
+
 }
 
 //when the button is pushed, stop or resume robot operation
@@ -294,6 +332,38 @@ void loop(){
 	}
 	
  }
+
+//stops the crank
+void stopArm()
+{
+	fourBarMotor.write(stopSpeed);
+}
+
+//lines up robot on a cross
+void lineUp()
+{
+	if((overLine(lineSenseLeft) != true) && (overLine(lineSenseRight) == true))
+	{
+		while(overLine(lineSenseLeft) != true)
+		{
+			rightDrive.write(stopSpeed);
+			leftDrive.write(baseSpeedLeft + 5);
+		}
+	} 
+	else if((overLine(lineSenseLeft) == true) && (overLine(lineSenseRight) != true))
+	{
+		while(overLine(lineSenseRight) != true)
+		{
+			leftDrive.write(stopSpeed);
+			rightDrive.write(baseSpeedRight - 5);
+		}
+	}
+	else 
+	{
+		rightDrive.write(stopSpeed);
+		leftDrive.write(stopSpeed);
+	}
+}
 
 //returns boolean if a certain amount of lines have been hit
 boolean lineHit(int x){
@@ -462,16 +532,8 @@ void releaseGrab()
 //optional slowing approach commented out
 void approachReactor()
 {
-	hundredMsFlag = 0;
-	while(hundredMsFlag != 1)
-	{
-		getError();
-		leftSpeed = baseSpeedLeft - ((float) error*speedGain); // - (slowTime * slowTimeGain);
-		rightSpeed = baseSpeedRight - ((float) error*speedGain); // -(slowTime * slowTimeGain);
-		leftDrive.write(leftSpeed);
-		rightDrive.write(rightSpeed);
-	}
-	
+	encoderLeftCount = 0;
+	encoderRightCount = 0;
 	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
 	{
 		if(encoderLeftCount >= forwardThreshold)
