@@ -183,44 +183,44 @@ void runTest()
 	//insert test code here
 
 
-	goXlines(3);
-	lineUp();
-	stop();
-	delay(400);
-	approachReactor();
-	stop();
-	delay(400);
-	flipMeDown();
-	releaseGrab();
-	delay(400);
-	stopArm();
-	grab();
-	delay(400);
-	setArmAngle(upPosition);
-	turn180();
-	stopArm();
-	goXlines(1);
-	lineUp();
-	turnLeft90();
-	goXlines(1);
-	lineUp();
-	stop();
-	delay(400);
-	setArmAngle(upPosition);
-	flipMeUp();
-	delay(400);
-	approachReactor();
-	stop();
-	delay(400);
-	releaseGrab();
-	turn180();
-	stopArm();
-	delay(400); 
-	flipMeDown();
-	delay(400); 
-	goXlines(1);
-	stop();
-
+	// goXlines(3);
+	// lineUp();
+	// stop();
+	// delay(400);
+	// approachReactor();
+	// stop();
+	// delay(400);
+	// flipMeDown();
+	// releaseGrab();
+	// delay(400);
+	// stopArm();
+	// grab();
+	// delay(400);
+	// setArmAngle(upPosition);
+	// turn180();
+	// stopArm();
+	// goXlines(1);
+	// lineUp();
+	// turnLeft90();
+	// goXlines(1);
+	// lineUp();
+	// stop();
+	// delay(400);
+	// setArmAngle(upPosition);
+	// flipMeUp();
+	// delay(400);
+	// approachReactor();
+	// stop();
+	// delay(400);
+	// releaseGrab();
+	// turn180();
+	// stopArm();
+	// delay(400); 
+	// flipMeDown();
+	// delay(400); 
+	// goXlines(1);
+	// stop();
+	pullRod();
 
 
 }
@@ -384,6 +384,17 @@ boolean lineHit(int x){
 	{
 		return false;
 	}
+}
+
+void pullRod()
+{
+	flipMeDown();
+	releaseGrab();
+	grab();
+	delay(500);
+	setArmAngle(upPosition);
+	delay(1000);
+	stopArm();
 }
 
 //drive forward
