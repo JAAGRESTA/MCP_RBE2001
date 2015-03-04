@@ -31,8 +31,8 @@
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
-#define upPosition 150 
-#define downPosition 140
+#define upPosition 454  
+#define downPosition 400
 #define flipperUp 0
 #define flipperDown 180
 
@@ -64,11 +64,11 @@ int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = dark
 int measError; //difference in line tracker sensor values
 float error;
-float leftSpeed = 70, rightSpeed = 110, speedGain = 1.5; 
+float leftSpeed = 70, rightSpeed = 110, speedGain = 0.005; 
 unsigned long int heartBeatCounter = 0;
-float potAngle;
+float potVal;
 float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed = 90, pGain= 4, iGain=0, dGain=0;
+float adjustedSpeed = 90, pGain= 450, iGain=50, dGain=100;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
@@ -166,14 +166,13 @@ void runTest()
 	// x = analogRead(lineSenseLeft);
 	// y = analogRead(lineSenseRight);
 
-	//followLine();
+	followLine();
 	//releaseGrab();
 	//grab();
-	flipMeDown();
-	delay(1000);
-	flipMeUp();
-	delay(1000);
-
+	// flipMeDown();
+	// delay(1000);
+	// flipMeUp();
+	// delay(1000);
 
 	// Serial.print(analogRead(lineSenseLeft));
 	// Serial.print(", ");
@@ -181,9 +180,11 @@ void runTest()
 	// Serial.println(y);
 	//Serial.println(analogRead(potPin));
 	
-	//setArmAngle(80);
+	//setArmAngle(upPosition);
+	//Serial.println(getPotVal());
 	//setArmAngle(downPosition);
 	//insert test code here
+	//goXlines(5);
 }
 
 //when the button is pushed, stop or resume robot operation
@@ -354,23 +355,11 @@ void stop()
 // //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
-	//while(crossHit() != true)
-	//{
 		getError();
-		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
-		rightSpeed = baseSpeedRight + ((float) error*speedGain);
+		leftSpeed = baseSpeedLeft - ((float) error*speedGain);
+		rightSpeed = baseSpeedRight - ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(rightSpeed);
-	
-		// if(armStatus == DOWN)
-		// {
-		// 	setArmAngle(downPosition);
-		// } 
-		// else if(armStatus == UP)
-		// {
-		// 	setArmAngle(upPosition);
-		// }a
-	//}
 }
 
 void goXlines(int lineNum)
@@ -435,17 +424,17 @@ boolean reactorHit()
 
 //checks the potentiometer position and converts it to an angle
 //returns the potentiometer angle value in degrees
-int getPotAngle()
+float getPotVal()
 {
-	potAngle = analogRead(potPin);
-	return potAngle;
+	potVal = analogRead(potPin);
+	return potVal;
 }
 
 //sets four-bar to a given desired angle with PID control 
 //pot is BACKWARD!
 void setArmAngle(float desiredAngle)
 {
-		angleError = ((float) desiredAngle ) - getPotAngle();
+		angleError = (desiredAngle/1023) - (getPotVal()/1023);
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		Serial.print("Motor Speed :");
 		Serial.println(90 + adjustedSpeed);
@@ -492,8 +481,8 @@ void approachReactor()
 	while(hundredMsFlag != 1)
 	{
 		getError();
-		leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
-		rightSpeed = baseSpeedRight + ((float) error*speedGain); // -(slowTime * slowTimeGain);
+		leftSpeed = baseSpeedLeft - ((float) error*speedGain); // - (slowTime * slowTimeGain);
+		rightSpeed = baseSpeedRight - ((float) error*speedGain); // -(slowTime * slowTimeGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(leftSpeed);
 	}
