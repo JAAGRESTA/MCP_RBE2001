@@ -620,7 +620,9 @@ boolean disposalEmpty(int x)
 {
 	int i;
 	i = x-1;
-	return storageTubes[i];
+	byte mask = 0x01;
+	mask << i;
+	return (mask & storageTubes[i] != mask);
 }
 // navigates to Supply based off availablity of supply and closest coordinates
 void navigateToSupply()
@@ -731,7 +733,9 @@ boolean supplyFull(int x)
 {
 	int i;
 	i = x-1;
-	return supplyTubes[i];
+	byte mask = 0x01;
+	mask << i;
+	return (mask & supplyTubes == mask);
 }
 void turnLeft90()
 {
