@@ -119,7 +119,7 @@ enum blueState{
 	robotStatus,
 	robotHeartbeat
 };
-armState armStatus;
+
 blueState _blueState;
 State state;
 
@@ -143,7 +143,6 @@ void setup(){
 	attachInterrupt(4, encoderRightISR, RISING);
 
 	state = Start;
-	armStatus = DOWN;
 
 	reactor = 'A'; //reactor type
 	lineCount = 0; //counts the amount of lines
@@ -418,6 +417,7 @@ boolean reactorHit()
 
 //checks the potentiometer position 
 //returns the potentiometer value 
+float getPotVal()
 {
 	potVal = analogRead(potPin);
 	return potVal;
