@@ -2,7 +2,7 @@
 #include <TimerOne.h>
 #include <BluetoothClient.h>
 #include <BluetoothMaster.h>
-#include "ReactorProtocol.h"
+//#include "ReactorProtocol.h"
 
 //all pins are temporary and need changing
 #define leftDrivePin 10
@@ -11,8 +11,8 @@
 #define rackMotorPin 26 //not a thing at the moment
 #define grabberServoPin 22
 #define limitPin A0
-#define lineSenseRight A1
-#define lineSenseLeft A2
+#define lineSenseRight A2
+#define lineSenseLeft A1
 #define lineSenseCenter A3
 #define lineSenseFarLeft A4
 #define potPin A5
@@ -68,7 +68,7 @@ float leftSpeed, rightSpeed, speedGain = 0.55;
 unsigned long int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed = 90, pGain= 10, iGain=0, dGain=0;
+float adjustedSpeed = 90, pGain= 4, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
@@ -84,9 +84,9 @@ byte type;
 bool storageTubes[4];
 bool supplyTubes[4];
 
-ReactorProtocol myRobot(0x0A);
-BluetoothClient myClient;
-BluetoothMaster myMaster;
+// ReactorProtocol myRobot(0x0A);
+// BluetoothClient myClient;
+// BluetoothMaster myMaster;
 
 Servo leftDrive;
 Servo rightDrive;
@@ -160,10 +160,15 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	int x;
-	x = getPotAngle();
-	Serial.println(x);
-	setArmAngle(150);
+	int x,y;
+	x = analogRead(lineSenseLeft);
+	y = analogRead(lineSenseRight);
+
+
+	Serial.println(y);
+	//Serial.println(y);
+	
+	//setArmAngle(80);
 	//setArmAngle(downPosition);
 	//insert test code here
 }
@@ -424,8 +429,8 @@ void setArmAngle(int desiredAngle)
 		angleError = desiredAngle - getPotAngle();
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		Serial.print("Motor Speed :");
-		Serial.println(90 - adjustedSpeed);
-		fourBarMotor.write(90 - adjustedSpeed);
+		Serial.println(90 + adjustedSpeed);
+		fourBarMotor.write(90 + adjustedSpeed);
 		prevAngleError = angleError;
 		deltaAngleError = prevAngleError - angleError;
 		sumAngleError = angleError + prevAngleError;
