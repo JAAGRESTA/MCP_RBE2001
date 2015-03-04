@@ -480,7 +480,6 @@ void setArmAngle(int desiredAngle)
 {
 		angleError = desiredAngle - getPotAngle();
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
-		Serial.println("Motor Speed :");
 		Serial.print(90 + adjustedSpeed);
 		fourBarMotor.write(90 + adjustedSpeed);
 		prevAngleError = angleError;
