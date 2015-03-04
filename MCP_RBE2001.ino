@@ -2,18 +2,16 @@
 #include <TimerOne.h>
 #include <BluetoothClient.h>
 #include <BluetoothMaster.h>
-//#include "ReactorProtocol.h"
+//#include <ReactorProtocol.h>
 
-//all pins are temporary and need changing
+//i/o pins
 #define leftDrivePin 10
 #define rightDrivePin 11
 #define fourBarPin 4
-#define rackMotorPin 26 //not a thing at the moment
 #define grabberServoPin 6
 #define limitPin A0
 #define lineSenseRight A2
 #define lineSenseLeft A1
-#define lineSenseCenter A3
 #define lineSenseFarLeft A4
 #define potPin A5
 #define encoderRight 19
@@ -22,6 +20,7 @@
 #define flipperPin 7
 #define radLED 27
 
+//constants for motor speeds and servo positions
 #define stopSpeed 90
 #define potRange 180
 #define leftFWD 70
@@ -36,6 +35,7 @@
 #define flipperUp 0
 #define flipperDown 180
 
+//bluetooth constants
 #define lengthPos 1
 #define typePos 2
 #define dataPos 5
