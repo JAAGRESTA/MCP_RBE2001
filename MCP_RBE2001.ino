@@ -9,7 +9,7 @@
 #define rightDrivePin 11
 #define fourBarPin 4
 #define rackMotorPin 26 //not a thing at the moment
-#define grabberServoPin 22
+#define grabberServoPin 6
 #define limitPin A0
 #define lineSenseRight A2
 #define lineSenseLeft A1
@@ -19,7 +19,7 @@
 #define encoderRight 19
 #define encoderLeft 3 
 #define buttonIntPin 2
-#define flipperPin 5
+#define flipperPin 7
 #define radLED 27
 
 #define stopSpeed 90
@@ -33,6 +33,8 @@
 #define rackMoveTime 50
 #define upPosition 150 
 #define downPosition 140
+#define flipperUp 0
+#define flipperDown 180
 
 #define lengthPos 1
 #define typePos 2
@@ -64,8 +66,8 @@ int measError; //difference in line tracker sensor values
 float error;
 float leftSpeed = 70, rightSpeed = 110, speedGain = 1.5; 
 unsigned long int heartBeatCounter = 0;
-int potAngle;
-int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
+float potAngle;
+float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed = 90, pGain= 4, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {5,1};
@@ -91,7 +93,7 @@ bool supplyTubes[4];
 Servo leftDrive;
 Servo rightDrive;
 Servo fourBarMotor;
-Servo flipperMotor;
+Servo flipperServo;
 Servo grabberServo;
 
 enum armState{ //needs use
@@ -131,7 +133,7 @@ void setup(){
 	leftDrive.attach(leftDrivePin,1000,2000);
 	rightDrive.attach(rightDrivePin,1000,2000);
 	fourBarMotor.attach(fourBarPin,1000,2000);
-	flipperMotor.attach(flipperPin);
+	flipperServo.attach(flipperPin);
 	grabberServo.attach(grabberServoPin);
 
 	Serial1.begin(115200);
@@ -164,12 +166,20 @@ void runTest()
 	// x = analogRead(lineSenseLeft);
 	// y = analogRead(lineSenseRight);
 
-	followLine();
+	//followLine();
+	//releaseGrab();
+	//grab();
+	flipMeDown();
+	delay(1000);
+	flipMeUp();
+	delay(1000);
+
+
 	// Serial.print(analogRead(lineSenseLeft));
 	// Serial.print(", ");
 	// Serial.println(analogRead(lineSenseRight));
 	// Serial.println(y);
-	//Serial.println(y);
+	//Serial.println(analogRead(potPin));
 	
 	//setArmAngle(80);
 	//setArmAngle(downPosition);
@@ -427,16 +437,15 @@ boolean reactorHit()
 //returns the potentiometer angle value in degrees
 int getPotAngle()
 {
-	potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
-	//potAngle = analogRead(potPin);
+	potAngle = analogRead(potPin);
 	return potAngle;
 }
 
 //sets four-bar to a given desired angle with PID control 
 //pot is BACKWARD!
-void setArmAngle(int desiredAngle)
+void setArmAngle(float desiredAngle)
 {
-		angleError = desiredAngle - getPotAngle();
+		angleError = ((float) desiredAngle ) - getPotAngle();
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		Serial.print("Motor Speed :");
 		Serial.println(90 + adjustedSpeed);
@@ -887,9 +896,9 @@ void backwardToThreshold()
 }
 void flipMeUp()
 {
-	flipperMotor.write(180);
+	flipperServo.write(flipperUp);
 }
 void flipMeDown()
 {
-	flipperMotor.write(0);
+	flipperServo.write(flipperDown);
 }
