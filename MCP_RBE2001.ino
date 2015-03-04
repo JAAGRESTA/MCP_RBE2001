@@ -290,11 +290,12 @@ void loop(){
 boolean lineHit(int x){
 	if(overLine(lineSenseFarLeft) && (!lineFlag))
 	{
-		lineCount++;
+		
 		lineFlag = 1;
 	
 	}else if(!(overLine(lineSenseFarLeft)))
 	{
+		lineCount++;
 		lineFlag = 0;
 	}
 	if(lineCount == x)
@@ -350,7 +351,7 @@ void followLine()
 		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(rightSpeed);
-		
+	
 		// if(armStatus == DOWN)
 		// {
 		// 	setArmAngle(downPosition);
