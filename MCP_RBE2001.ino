@@ -63,7 +63,7 @@ int lineCount;
 int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = light
 float error;
-float leftSpeed = 70, rightSpeed = 110, speedGain = 0.01; 
+float leftSpeed = 70, rightSpeed = 110, speedGain = 0.017, speedDgain = 0.060, prevSpeedError = 0, deltaSpeedError = 0; 
 unsigned long int heartBeatCounter = 0;
 float potVal;
 float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
@@ -71,11 +71,11 @@ float adjustedSpeed = 90, pGain= 450, iGain=50, dGain=100;
 int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
-float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
+float turn90Threshold = 90, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 int hundredMsFlag = 0, twentyMsCounter = 0;
 int radFlag = 0;
-int baseSpeedLeft = 70;
-int baseSpeedRight = 110;
+int baseSpeedLeft = 72;
+int baseSpeedRight = 108;
 
 bool isReceivingData = false;
 byte *myData[10];
@@ -158,7 +158,7 @@ void runTest()
 	// x = analogRead(lineSenseLeft);
 	// y = analogRead(lineSenseRight);
 
-	followLine();
+	//followLine();
 	//releaseGrab();
 	//grab();
 	// flipMeDown();
@@ -181,7 +181,10 @@ void runTest()
 	//Serial.println(getPotVal());
 	//setArmAngle(downPosition);
 	//insert test code here
-	//goXlines(5);
+	goXlines(1);
+	stop();
+	delay(1000);
+	turnLeft90();
 }
 
 //when the button is pushed, stop or resume robot operation
@@ -348,15 +351,18 @@ void stop()
  	}
  }
 
-// //method to do proportional line tracking 
+// //method to do proportional-derivative line tracking 
 void followLine() 
-{			
+{		
 		getError();
-		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
-		rightSpeed = baseSpeedRight + ((float) error*speedGain);
+		leftSpeed = baseSpeedLeft + error*speedGain + deltaSpeedError*speedDgain;
+		rightSpeed = baseSpeedRight + error*speedGain + deltaSpeedError*speedDgain;
 		leftDrive.write(leftSpeed);
 		rightDrive.write(rightSpeed);
+		deltaSpeedError = prevSpeedError - error;
+		prevSpeedError = error;
 }
+		
 
 //follow a line until a given number of crosses or intersections are hit
 void goXlines(int lineNum)
