@@ -28,8 +28,6 @@
 #define rightFWD 110
 #define leftBWD 110
 #define rightBWD 70
-#define baseSpeedLeft 70
-#define baseSpeedRight 110
 #define grabberClosed 180
 #define grabberOpen 0
 #define rackMoveTime 50
@@ -63,8 +61,8 @@ int lineCount;
 int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = dark
 int measError; //difference in line tracker sensor values
-int error;
-float leftSpeed, rightSpeed, speedGain = 0.55; 
+float error;
+float leftSpeed = 70, rightSpeed = 110, speedGain = 1.5; 
 unsigned long int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
@@ -76,6 +74,8 @@ int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encode
 float turn90Threshold = 95, turn180Threshold = 200, forwardThreshold = 70.35, backwardThreshold = 70.35; //turn needs tuning or calculating
 int hundredMsFlag = 0, twentyMsCounter = 0;
 int radFlag = 0;
+int baseSpeedLeft = 70;
+int baseSpeedRight = 110;
 
 bool isReceivingData = false;
 byte *myData[10];
@@ -160,12 +160,15 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	int x,y;
-	x = analogRead(lineSenseLeft);
-	y = analogRead(lineSenseRight);
+	// int x,y;
+	// x = analogRead(lineSenseLeft);
+	// y = analogRead(lineSenseRight);
 
-
-	Serial.println(y);
+	followLine();
+	// Serial.print(analogRead(lineSenseLeft));
+	// Serial.print(", ");
+	// Serial.println(analogRead(lineSenseRight));
+	// Serial.println(y);
 	//Serial.println(y);
 	
 	//setArmAngle(80);
@@ -202,7 +205,6 @@ void loop(){
 }
 //master state machine
  void stateMachine(){
-	
 	switch (state) {
 		case Start:
 			stop(); 
@@ -334,22 +336,23 @@ void stop()
 // //method to do line tracking until the robot drives over a line
 void followLine() 
 {			
-	while(crossHit() != true)
-	{
+	//while(crossHit() != true)
+	//{
 		getError();
 		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
 		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
-		rightDrive.write(leftSpeed);
-		if(armStatus == DOWN)
-		{
-			setArmAngle(downPosition);
-		} 
-		else if(armStatus == UP)
-		{
-			setArmAngle(upPosition);
-		}
-	}
+		rightDrive.write(rightSpeed);
+		
+		// if(armStatus == DOWN)
+		// {
+		// 	setArmAngle(downPosition);
+		// } 
+		// else if(armStatus == UP)
+		// {
+		// 	setArmAngle(upPosition);
+		// }a
+	//}
 }
 
 void goXlines(int lineNum)
@@ -364,8 +367,7 @@ void goXlines(int lineNum)
 //finds difference in line sensor values, sets that value to a useable motor speed
 void getError()
 {
- 	measError = analogRead(lineSenseRight) - analogRead(lineSenseLeft);
-	error = map(measError, -1023, 1023, -90, 90);
+ 	error = analogRead(lineSenseLeft) - analogRead(lineSenseRight);
 }
 
 //method to see if the far line sensor and at least one other line sensor on on a line or not indicating a cross
@@ -388,7 +390,7 @@ boolean crossHit()
 //returns true if it's on dark, false otherwise
 boolean overLine(int lineSensorPin) 
 {
-	if (analogRead(lineSensorPin) >= lightThreshold)
+	if (analogRead(lineSensorPin) <= lightThreshold)
 	{
 		return true;
 	}
