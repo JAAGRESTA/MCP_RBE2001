@@ -62,9 +62,8 @@ char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
 int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = light
-int measError; //difference in line tracker sensor values
 float error;
-float leftSpeed = 70, rightSpeed = 110, speedGain = 0.005; 
+float leftSpeed = 70, rightSpeed = 110, speedGain = 0.01; 
 unsigned long int heartBeatCounter = 0;
 float potVal;
 float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
@@ -353,8 +352,8 @@ void stop()
 void followLine() 
 {			
 		getError();
-		leftSpeed = baseSpeedLeft - ((float) error*speedGain);
-		rightSpeed = baseSpeedRight - ((float) error*speedGain);
+		leftSpeed = baseSpeedLeft + ((float) error*speedGain);
+		rightSpeed = baseSpeedRight + ((float) error*speedGain);
 		leftDrive.write(leftSpeed);
 		rightDrive.write(rightSpeed);
 }
@@ -464,7 +463,7 @@ void approachReactor()
 		leftSpeed = baseSpeedLeft - ((float) error*speedGain); // - (slowTime * slowTimeGain);
 		rightSpeed = baseSpeedRight - ((float) error*speedGain); // -(slowTime * slowTimeGain);
 		leftDrive.write(leftSpeed);
-		rightDrive.write(leftSpeed);
+		rightDrive.write(rightSpeed);
 	}
 	
 	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
