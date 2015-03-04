@@ -67,7 +67,7 @@ float leftSpeed, rightSpeed, speedGain = 0.55;
 int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
-float adjustedSpeed = 90, pGain= 0.5, iGain=0, dGain=0;
+float adjustedSpeed = 90, pGain= 2, iGain=0, dGain=0;
 float slowTimeGain = 0.75;
 int XYcoords[2] = {0,1};
 int currentXYcoords[2] = {0,1};
@@ -159,7 +159,7 @@ void setup(){
 //method to test stand-alone modules of code for individual testing
 void runTest()
 {
-	setArmAngle(downPosition);
+	setArmAngle(803);
 	//setArmAngle(downPosition);
 	//insert test code here
 }
@@ -469,8 +469,8 @@ boolean reactorHit()
 //returns the potentiometer angle value in degrees
 int getPotAngle()
 {
-	potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
-	
+	//potAngle = map(analogRead(potPin), 0, 1023, 0, potRange);
+	potAngle = analogRead(potPin);
 	return potAngle;
 }
 
