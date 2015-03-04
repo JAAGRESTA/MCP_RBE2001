@@ -64,7 +64,7 @@ int lightThreshold = 600; //threshold for if a line sensor is on light or dark, 
 int measError; //difference in line tracker sensor values
 int error;
 float leftSpeed, rightSpeed, speedGain = 0.55; 
-int heartBeatCounter = 0;
+unsigned long int heartBeatCounter = 0;
 int potAngle;
 int angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed = 90, pGain= 10, iGain=0, dGain=0;
@@ -377,10 +377,9 @@ void stop()
  void HundredMsISR() 
  {
  	// heartBeatCounter++;
- 	// if(heartBeatCounter == 5) //every .5 seconds
+ 	// if((heartBeatCounter % 5) == 0) //every .5 seconds
  	// {
  	// 	sendHeartBeat();
- 	// 	heartBeatCounter = 0;
  	// }
  }
 
@@ -522,15 +521,37 @@ void releaseGrab()
 //optional slowing approach commented out
 void approachReactor()
 {
-	while(!reactorHit())
-	{
+
 	getError();
 	leftSpeed = baseSpeedLeft + ((float) error*speedGain); // - (slowTime * slowTimeGain);
 	rightSpeed = baseSpeedRight + ((float) error*speedGain); // -(slowTime * slowTimeGain);
 	leftDrive.write(leftSpeed);
 	rightDrive.write(leftSpeed);
-	//slowTime++;
+	delay(100);
+	
+	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
+	{
+		if(encoderLeftCount >= forwardThreshold)
+		{
+			leftDrive.write(stopSpeed);
+		}
+		else
+		{
+			leftDrive.write(leftFWD);
+		}
+		if(encoderRightCount >= forwardThreshold)
+		{
+			rightDrive.write(stopSpeed);
+		}
+		else
+		{
+			rightDrive.write(rightFWD);
+		}
 	}
+
+
+	//slowTime++;
+	
 }
 //navigates to a desired reactor from any point on the course
 //make sure when starting robot to be in initialized XYcoords position
