@@ -61,7 +61,7 @@
 char reactor; //reactor type
 int lineCount; 
 int lineFlag; //flag when line detected
-int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = dark
+int lightThreshold = 600; //threshold for if a line sensor is on light or dark, above threshold = light
 int measError; //difference in line tracker sensor values
 float error;
 float leftSpeed = 70, rightSpeed = 110, speedGain = 0.005; 
@@ -69,7 +69,6 @@ unsigned long int heartBeatCounter = 0;
 float potVal;
 float angleError = 0, prevAngleError = 0, deltaAngleError = 0, sumAngleError =0, slowTime = 0;
 float adjustedSpeed = 90, pGain= 450, iGain=50, dGain=100;
-float slowTimeGain = 0.75;
 int XYcoords[2] = {5,1};
 int currentXYcoords[2] = {3,1};
 int encoderLeftCount = 0, encoderRightCount = 0, encoderLeftCurrentCount, encoderRightCurrentCount;
@@ -95,11 +94,6 @@ Servo rightDrive;
 Servo fourBarMotor;
 Servo flipperServo;
 Servo grabberServo;
-
-enum armState{ //needs use
-	UP,
-	DOWN
-};
 
 enum State{
 	Start,
@@ -249,8 +243,8 @@ void loop(){
 	      releaseGrab();
 	      setArmAngle(downPosition);
 	      grab();
-	      flipMeUp();
 	      setArmAngle(upPosition);
+	      flipMeUp();
 	      radFlag = 1; //carrying spent rod => spents radiation
 	      state = findDisposal;
 	      break;
@@ -352,7 +346,7 @@ void stop()
  	}
  }
 
-// //method to do line tracking until the robot drives over a line
+// //method to do proportional line tracking 
 void followLine() 
 {			
 		getError();
@@ -362,6 +356,7 @@ void followLine()
 		rightDrive.write(rightSpeed);
 }
 
+//follow a line until a given number of crosses or intersections are hit
 void goXlines(int lineNum)
 {
 	while(!lineHit(lineNum))
@@ -388,7 +383,6 @@ boolean crossHit()
   	} 
   	else 
   	{
-  		
   		return false;
   	}
 }
@@ -422,19 +416,17 @@ boolean reactorHit()
 	}
 }
 
-//checks the potentiometer position and converts it to an angle
-//returns the potentiometer angle value in degrees
-float getPotVal()
+//checks the potentiometer position 
+//returns the potentiometer value 
 {
 	potVal = analogRead(potPin);
 	return potVal;
 }
 
-//sets four-bar to a given desired angle with PID control 
-//pot is BACKWARD!
-void setArmAngle(float desiredAngle)
+//sets four-bar to a given desired setpoint with PID control 
+void setArmAngle(float desiredPosition)
 {
-		angleError = (desiredAngle/1023) - (getPotVal()/1023);
+		angleError = (desiredPosition/1023) - (getPotVal()/1023);
 		adjustedSpeed = angleError*pGain + deltaAngleError*dGain + sumAngleError*iGain;
 		Serial.print("Motor Speed :");
 		Serial.println(90 + adjustedSpeed);
@@ -455,22 +447,6 @@ void releaseGrab()
 {
 	grabberServo.write(grabberOpen);
 }
-
-// //moves rack and pinion system to forward position, stops
-// void rackForward()
-// {
-// 	rackMotor.write(150);
-// 	delay(rackMoveTime);
-// 	rackMotor.write(90);
-// }
-
-// //moves rack and pinion system to backward position, stops
-// void rackReverse()
-// {
-// 	rackMotor.write(30);
-// 	delay(rackMoveTime);
-// 	rackMotor.write(90);
-// }
 
 //allows us to approach the reactor until limit switch hit
 //written the same as followLine method
@@ -745,11 +721,15 @@ void turnLeft90()
 	// 	encoderRightCount = 0;
 	// }
 }
+
+//drives forward slightly and turns 90 degrees using encoders
 void turnRight90()
 {
 	forwardToThreshold();
 	turnRightToThreshold();
 }
+
+//backs up slightly and turns 180 degrees using encoders
 void turn180()
 {
 
@@ -776,6 +756,8 @@ void turn180()
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
 }
+
+//increments encoder count each rising edge
 void encoderLeftISR()
 {
 	encoderLeftCount++;
@@ -784,7 +766,8 @@ void encoderRightISR()
 {
 	encoderRightCount++;
 }
-//pls work
+
+//turns left 90 degrees using encoders
 void turnLeftToThreshold()
 {
 	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
@@ -809,6 +792,8 @@ void turnLeftToThreshold()
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
 }
+
+//turns right 90 degrees using encoders
 void turnRightToThreshold()
 {
 	while((encoderLeftCount < turn90Threshold) && (encoderRightCount < turn90Threshold))
@@ -833,7 +818,8 @@ void turnRightToThreshold()
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
 }
-//pretty pls
+
+//moves straight forward using encoders
 void forwardToThreshold()
 {
 	while( (encoderLeftCount < forwardThreshold) && (encoderRightCount < forwardThreshold))
@@ -859,6 +845,8 @@ void forwardToThreshold()
 	encoderLeftCount = 0;
 	
 }
+
+//moves straight backwards using encoders
 void backwardToThreshold()
 {
 	while( (encoderLeftCount < backwardThreshold) && (encoderRightCount < backwardThreshold))
@@ -883,10 +871,14 @@ void backwardToThreshold()
 	encoderRightCount = 0;
 	encoderLeftCount = 0;
 }
+
+//moves string tensioner to up position
 void flipMeUp()
 {
 	flipperServo.write(flipperUp);
 }
+
+//moves string tensioner to down position
 void flipMeDown()
 {
 	flipperServo.write(flipperDown);
