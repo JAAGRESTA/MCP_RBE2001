@@ -12,7 +12,6 @@
 #define teamID 0x0A
 #define newRodID 0x2C
 #define spentRodID 0xFF
-#define buttonIn 2
 
 #define moveStatus_stopped 0x01
 #define moveStatus_moving 0x03
@@ -27,6 +26,20 @@
 #define opStatus_toSupply 0x05
 #define opStatus_idle 0x06
 
+#define buttonIn 2
+#define readyLight 3
+/*
+Storage and Supply LED pin lines need to be wired up to Arduino
+*/
+#define STORAGE_LED_0 4
+#define STORAGE_LED_1 5
+#define STORAGE_LED_2 6
+#define STORAGE_LED_3 7
+#define SUPPLY_LED_0 8
+#define SUPPLY_LED_1 9
+#define SUPPLY_LED_2 10
+#define SUPPLY_LED_3 11
+
 byte myData[10];
 byte data[3];
 byte packet[10];
@@ -37,53 +50,105 @@ byte robotStatus[3];
 int heartbeatCounter = 0;
 int radFlag = 0;
 bool beginOperations = false;
+int testingTimer = 0;
+int demoTimer = 0;
+bool _doHeartbeat = false;  //disable heartbeat on field for now
+
 
 ReactorProtocol myRobot(0x0A);
 BluetoothClient myClient;
 BluetoothMaster myMaster;
 char message[10];
 
+enum masterState {
+  testingState,
+  demoState
+};
+
+masterState _masterState;
+
 void setup() {
   Serial1.begin(115200);
   Serial.begin(9600);
   Timer1.initialize(20000);
   Timer1.attachInterrupt(hundredMsISR);
+  _masterState = testingState; //Set the master mode to testing for now
   pinMode(buttonIn, INPUT);
-}
-void loop() {
-  if(digitalRead(buttonIn) == HIGH) {
-    beginOperations = true;
+  pinMode(readyLight, OUTPUT);
+  pinMode(STORAGE_LED_0, OUTPUT);
+  pinMode(STORAGE_LED_1, OUTPUT);
+  pinMode(STORAGE_LED_2, OUTPUT);
+  pinMode(STORAGE_LED_3, OUTPUT);
+  pinMode(SUPPLY_LED_0, OUTPUT);
+  pinMode(SUPPLY_LED_1, OUTPUT);
+  pinMode(SUPPLY_LED_2, OUTPUT);
+  pinMode(SUPPLY_LED_3, OUTPUT);
+  bool _doHeartbeat = false;
+  while(!beginOperations) {
+    if(digitalRead(buttonIn) == HIGH) {
+      beginOperations = true;
+    }
   }
-  if (myMaster.readPacket(myData)) {
+}
+
+void loop() {
+  switch(_masterState) {
+    case testingState:
+      testingLoop();
+      break;
+    case demoState:
+      demoLoop();
+      break;
+  }
+}
+void hundredMsISR() {
+  switch(_masterState) {
+    case testingState:
+      testingISR();
+      break;
+    case demoState:
+      demoISR();
+      break;
+
+  }
+}
+
+void testingLoop() {
+  if (myMaster.readPacket(myData) && (testingTimer >= 6)) {
+    testingTimer = 0;
     if (myRobot.getData(myData, data, type)) {
       parseData(data, type);
     }
     Serial.println("-----------NEW PACKET-----------");
   }
-    for (int i = 0; i < 4; i++) {
-      Serial.println(data[i]);
-    }
-}
-void hundredMsISR() {
-  heartbeatCounter++;
-  byte *radData;
-  if (heartbeatCounter >= 25 && (beginOperations == true)) {
+  else {
+    Serial.println("-------NO NEW PACKET-------");
+  }
+  Serial.println("---------DATA CONTENTS--------");
+  for (int i = 0; i < 4; i++) {
+    Serial.print(data[i]);
+    Serial.print(", ");
+  }
+  Serial.println("-------BITMASK CONTENTS----------");
+  Serial.println("SUPPLY BITMASK: ");
+  Serial.print(String(supplyTubes, BIN));
+  Serial.println("STORAGE BITMASK: ");
+  Serial.print(String(storageTubes, BIN));
+  Serial.println("-------------------------------");
+  if((heartbeatCounter >= 5) && _doHeartbeat) {
     doHeartbeat();
-    if (radFlag != 0) {
-      if (radFlag == 1) {
-        *radData = 0x2C;
-      }
-      else if (radFlag == 2) {
-        *radData = 0xFF;
-      }
-      sendRadAlert(radData);
-      sendStatus(robotStatus[0], robotStatus[1], robotStatus[2]);
-      for(int i=0;i<3;i++) {
-        Serial.println(data[i]);
-      }
-    }
     heartbeatCounter = 0;
   }
+}
+void demoLoop() {
+  demoTimer++;
+}
+void testingISR() {
+  testingTimer++;
+  heartbeatCounter++;
+}
+void demoISR() {
+  
 }
 void doHeartbeat() {
   byte packet[10];
