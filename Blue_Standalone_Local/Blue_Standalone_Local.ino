@@ -50,8 +50,11 @@ byte robotStatus[3];
 int heartbeatCounter = 0;
 int radFlag = 0;
 bool beginOperations = false;
-int testingTimer = 0;
+int readTimer = 0;
+int statusTimer = 0;
 int demoTimer = 0;
+int caseCounter = 0;
+int testingTimer;
 bool _doHeartbeat = false;  //disable heartbeat on field for now
 
 
@@ -114,9 +117,9 @@ void hundredMsISR() {
 }
 
 void testingLoop() {
-  if (myMaster.readPacket(myData) && (testingTimer >= 6)) {
+  if (myMaster.readPacket(myData)) {
     testingTimer = 0;
-    if (myRobot.getData(myData, data, type)) {
+    if (myRobot.getData(myData, data, type) && (readTimer >= 6)) {
       parseData(data, type);
     }
     Serial.println("-----------NEW PACKET-----------");
@@ -136,15 +139,49 @@ void testingLoop() {
   Serial.print(String(storageTubes, BIN));
   Serial.println("-------------------------------");
   if((heartbeatCounter >= 5) && _doHeartbeat) {
+    Serial.println("-------------SENT HEARTBEAT----------");
+    Serial.println("--------------------------------");
     doHeartbeat();
     heartbeatCounter = 0;
+  }
+  if(statusTimer >=7) {
+    switch(caseCounter) {
+      case 0:
+        sendStatus(moveStatus_stopped, gripStatus_noRod, opStatus_idle);
+        break;
+      case 1:
+        sendStatus(moveStatus_moving, gripStatus_noRod, opStatus_idle);
+        break;
+      case 2:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_idle);
+        break;
+      case 3:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_toSupply);
+        break;
+      case 4:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_toStorage);
+        break;
+      case 5:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_toReactor);
+        break;
+      case 6:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_gripRelease);
+        break;
+      case 7:
+        sendStatus(moveStatus_moving, gripStatus_hasRod, opStatus_gripAttempt);
+        caseCounter = -1;
+        break;
+    }
+      caseCounter++;
   }
 }
 void demoLoop() {
   demoTimer++;
+  //go through switch case of all robot status messages with delay from testingTimer
+  //do heartbeat if heartbeatCounter
 }
 void testingISR() {
-  testingTimer++;
+  readTimer++;
   heartbeatCounter++;
 }
 void demoISR() {
